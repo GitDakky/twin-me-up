@@ -12,6 +12,10 @@ permissions:
 
 jobs:
   welcome:
+    # Maintainers and collaborators are not first-time contributors.
+    if: >-
+      !contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'),
+      github.event.issue.author_association || github.event.pull_request.author_association)
     runs-on: ubuntu-latest
     permissions:
       issues: write
