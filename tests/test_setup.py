@@ -15,6 +15,7 @@ from twinmeup import connect, identity
 from twinmeup.cli import app
 from twinmeup.errors import AuthorityError
 from twinmeup.hooks import ActionMap
+from twinmeup.protocol import TOOLS
 
 PASS = "correct horse battery staple\n"
 
@@ -157,4 +158,5 @@ def test_doctor_reports_each_check(run: Any) -> None:
         "audit chain": "ok",
         "mcp server": "ok",
     }
-    assert "10 tools" in next(c["detail"] for c in report["checks"] if c["check"] == "mcp server")
+    detail = next(c["detail"] for c in report["checks"] if c["check"] == "mcp server")
+    assert f"{len(TOOLS)} tools" in detail

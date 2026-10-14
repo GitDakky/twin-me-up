@@ -1,6 +1,6 @@
 [project]
 name = "twin-me-up"
-version = "0.1.0"
+version = "0.2.0"
 description = "A personal work twin for every AI agent: it learns how you decide, and agents act only within the authority you grant."
 readme = "README.md"
 requires-python = ">=3.11"

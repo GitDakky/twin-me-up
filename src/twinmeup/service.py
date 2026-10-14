@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Callable, Iterable, Sequence
-from datetime import date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -22,7 +22,10 @@ from .errors import AuthorityError, StateError
 from .models import (
     ALWAYS_CARRIED,
     GLOBAL_WORKFLOW,
+    MAX_TEXT,
     SCHEMA_VERSION,
+    ApprovalRequest,
+    ApprovalStatus,
     Authorisation,
     AuthorisationDecision,
     CitedLesson,
@@ -33,15 +36,18 @@ from .models import (
     EvalRun,
     EvalSet,
     Grant,
+    GrantUse,
     HandoffPacket,
     Lesson,
     LessonKind,
     LessonOrigin,
     LessonStatus,
     Option,
+    Receipt,
     SourceRef,
     as_utc,
     is_human,
+    safe_request_id,
     utcnow,
     validate_actor,
 )
@@ -66,6 +72,13 @@ DEFAULT_EVIDENCE: tuple[str, ...] = (
 # Actions that govern the twin itself (impersonating the principal, editing its store or
 # its enforcement). Hooks map them so they are always refused; they can never be granted.
 RESERVED_ACTION_PREFIX = "twin."
+
+# How long an approval stays usable when the principal does not say otherwise.
+APPROVAL_TTL = timedelta(hours=1)
+ASK_REASON = "Not granted. Prepare a draft, then request approval with twin_request_approval."
+# Result keys that name the record a write created, so erasure can find its receipt.
+_ENTITY_KEYS = ("episode_id", "lesson_id", "approval_id")
+_LATEST = datetime.max.replace(tzinfo=UTC)
 
 
 def default_home() -> Path:
@@ -304,6 +317,7 @@ class TwinService:
         actor: str,
         expires_at: datetime | None = None,
         note: str | None = None,
+        max_uses: int | None = None,
     ) -> Grant:
         require_human(actor, "granting authority")
         reserved = sorted(a for a in actions if a.startswith(RESERVED_ACTION_PREFIX))
@@ -322,6 +336,7 @@ class TwinService:
             granted_at=self.now(),
             expires_at=expires_at,
             note=note,
+            max_uses=max_uses,
         )
         self.store.put(grant, actor=actor, action="grant.created")
         return grant
@@ -344,6 +359,243 @@ class TwinService:
             Grant,
             lambda g: g.workflow in (workflow, GLOBAL_WORKFLOW) and g.is_active(now),
         )
+
+    # --- approvals --------------------------------------------------------------------
+
+    def request_approval(
+        self,
+        *,
+        workflow: str,
+        action: str,
+        summary: str,
+        actor: str,
+        details: str | None = None,
+        sources: Sequence[SourceRef] = (),
+    ) -> dict[str, Any]:
+        """Ask the principal to approve one action. Agents call this when authorise says ask.
+
+        Nothing is created when a grant already covers the action, and a second request for
+        the same pending action returns the first, so a waiting agent never queues duplicates.
+        """
+        validate_actor(actor)
+        if action.startswith(RESERVED_ACTION_PREFIX):
+            raise StateError(
+                f"'{action}': '{RESERVED_ACTION_PREFIX}' actions govern the twin itself and can "
+                "never be approved"
+            )
+        with self.store.transaction():
+            covering = [grant for grant in self.active_grants(workflow) if action in grant.actions]
+            if covering:
+                return {
+                    "status": "not_needed",
+                    "workflow": workflow,
+                    "action": action,
+                    "grant_ids": sorted(grant.id for grant in covering),
+                }
+            waiting = self.store.select(
+                ApprovalRequest,
+                lambda a: (
+                    a.status is ApprovalStatus.PENDING
+                    and a.workflow == workflow
+                    and a.action == action
+                    and a.requested_by == actor
+                ),
+            )
+            if waiting:
+                return self.approval_view(waiting[0])
+            request = ApprovalRequest(
+                workflow=workflow,
+                action=action,
+                summary=summary,
+                details=details,
+                sources=list(sources),
+                requested_by=actor,
+                requested_at=self.now(),
+            )
+            self.store.put(request, actor=actor, action="approval.requested")
+        return self.approval_view(request)
+
+    def approvals(
+        self, *, workflow: str | None = None, pending_only: bool = False
+    ) -> list[ApprovalRequest]:
+        return self.store.select(
+            ApprovalRequest,
+            lambda a: (
+                (workflow is None or a.workflow == workflow)
+                and (not pending_only or a.status is ApprovalStatus.PENDING)
+            ),
+        )
+
+    def approval_state(self, approval: ApprovalRequest) -> str:
+        """pending, declined, or for an approval: approved, used, expired or revoked."""
+        grant = self.store.find(Grant, approval.grant_id) if approval.grant_id else None
+        if approval.status is not ApprovalStatus.APPROVED or grant is None:
+            return approval.status.value
+        if grant.revoked_at is not None:
+            return "revoked"
+        if grant.exhausted:
+            return "used"
+        if not grant.in_date(self.now()):
+            return "expired"
+        return "approved"
+
+    def approval_view(self, approval: ApprovalRequest) -> dict[str, Any]:
+        view: dict[str, Any] = {
+            "approval_id": approval.id,
+            "status": self.approval_state(approval),
+            "workflow": approval.workflow,
+            "action": approval.action,
+            "summary": approval.summary,
+            "requested_by": approval.requested_by,
+            "requested_at": approval.requested_at.isoformat(),
+        }
+        if approval.details:
+            view["details"] = approval.details
+        if approval.decided_by is not None and approval.decided_at is not None:
+            view["decided_by"] = approval.decided_by
+            view["decided_at"] = approval.decided_at.isoformat()
+            view["decision_note"] = approval.decision_note
+        grant = self.store.find(Grant, approval.grant_id) if approval.grant_id else None
+        if grant is not None:
+            view["grant_id"] = grant.id
+            view["expires_at"] = grant.expires_at.isoformat() if grant.expires_at else None
+            view["uses_left"] = grant.uses_left
+        return view
+
+    def _pending(self, approval_id: str) -> ApprovalRequest:
+        approval = self.store.get(ApprovalRequest, approval_id)
+        if approval.status is not ApprovalStatus.PENDING:
+            raise StateError(
+                f"approval {approval_id} is {self.approval_state(approval)}; only pending "
+                "requests can be decided"
+            )
+        return approval
+
+    def approve(
+        self,
+        approval_id: str,
+        *,
+        actor: str,
+        expires_at: datetime | None = None,
+        max_uses: int = 1,
+        note: str | None = None,
+    ) -> ApprovalRequest:
+        """Approve a pending request: a grant for exactly that action, single-use by default."""
+        require_human(actor, "approving an action")
+        now = self.now()
+        expires_at = as_utc(expires_at) or now + APPROVAL_TTL
+        if expires_at <= now:
+            raise StateError("an approval cannot expire in the past")
+        if max_uses < 1:
+            raise StateError("an approval must allow at least one use")
+        with self.store.transaction():
+            approval = self._pending(approval_id)
+            grant = Grant(
+                workflow=approval.workflow,
+                actions=[approval.action],
+                granted_by=actor,
+                granted_at=now,
+                expires_at=expires_at,
+                note=note or f"Approval {approval.id}",
+                max_uses=max_uses,
+                approval_id=approval.id,
+            )
+            self.store.put(grant, actor=actor, action="grant.created")
+            approved = approval.model_copy(
+                update={
+                    "status": ApprovalStatus.APPROVED,
+                    "decided_by": actor,
+                    "decided_at": now,
+                    "decision_note": note,
+                    "grant_id": grant.id,
+                }
+            )
+            self.store.put(approved, actor=actor, action="approval.approved")
+            self._record_approval_decision(approved, chosen="approve", actor=actor)
+        return approved
+
+    def decline(self, approval_id: str, *, actor: str, note: str) -> ApprovalRequest:
+        require_human(actor, "declining an approval")
+        if not note.strip():
+            raise StateError("say why you are declining; the reason is itself learning")
+        with self.store.transaction():
+            approval = self._pending(approval_id)
+            declined = approval.model_copy(
+                update={
+                    "status": ApprovalStatus.DECLINED,
+                    "decided_by": actor,
+                    "decided_at": self.now(),
+                    "decision_note": note,
+                }
+            )
+            self.store.put(declined, actor=actor, action="approval.declined")
+            self._record_approval_decision(declined, chosen="decline", actor=actor)
+        return declined
+
+    def _record_approval_decision(
+        self, approval: ApprovalRequest, *, chosen: str, actor: str
+    ) -> Episode:
+        """Approving or declining is a real decision, so it becomes learning material."""
+        situation = f"{approval.requested_by} asked to {approval.action}: {approval.summary}"
+        return self.record_episode(
+            {
+                "workflow": approval.workflow,
+                "situation": situation[:MAX_TEXT],
+                "options": [
+                    {"id": "approve", "label": f"Approve {approval.action}"[:200]},
+                    {"id": "decline", "label": "Decline"},
+                ],
+                "chosen": chosen,
+                "rationale": approval.decision_note,
+                "sources": [{"kind": "decision_record", "locator": f"approval {approval.id}"}],
+            },
+            actor=actor,
+        )
+
+    # --- idempotency ------------------------------------------------------------------
+
+    def once(
+        self,
+        *,
+        actor: str,
+        tool: str,
+        request_id: str,
+        arguments: dict[str, Any],
+        run: Callable[[], dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Run a write at most once per actor, tool and request_id.
+
+        The write and its receipt commit together, so a retry after a crash or a dropped
+        connection gets the first result back instead of recording twice. A failed write
+        stores nothing, so it can be retried.
+        """
+        validate_actor(actor)
+        receipt_id = "rc-" + sha256(canonical([actor, tool, request_id]))[:32]
+        arguments_hash = sha256(canonical(arguments))
+        with self.store.transaction():
+            existing = self.store.find(Receipt, receipt_id)
+            if existing is not None:
+                replay: dict[str, Any] = {**existing.result, "replayed": True}
+                if existing.arguments_hash != arguments_hash:
+                    replay["warning"] = (
+                        "This request_id was first used with different arguments. "
+                        "This is the original result; use a new request_id for new work."
+                    )
+                return replay
+            result = run()
+            entity = next((str(result[key]) for key in _ENTITY_KEYS if result.get(key)), None)
+            receipt = Receipt(
+                id=receipt_id,
+                actor=actor,
+                tool=tool,
+                request_id=request_id,
+                arguments_hash=arguments_hash,
+                entity_id=entity,
+                result=result,
+                created_at=self.now(),
+            )
+            self.store.put(receipt, actor=actor, action="receipt.recorded")
+        return result
 
     # --- handoff ----------------------------------------------------------------------
 
@@ -531,31 +783,71 @@ class TwinService:
 
     # --- delegation loop --------------------------------------------------------------
 
-    def authorise(self, *, workflow: str, action: str, actor: str) -> Authorisation:
-        """May this actor take this action now? Only active grants say yes. Always audited."""
+    def authorise(
+        self, *, workflow: str, action: str, actor: str, attempt_id: str | None = None
+    ) -> Authorisation:
+        """May this actor take this action now? Only active grants say yes. Always audited.
+
+        A check without attempt_id changes nothing. Enforcement hooks pass the id of the tool
+        call about to run: that spends one use of a limited grant (an approval), in the same
+        transaction as the decision, and repeating the same attempt is allowed again without
+        spending more. Unlimited grants are never spent.
+        """
         validate_actor(actor)
-        grants = [g for g in self.active_grants(workflow) if action in g.actions]
-        if grants:
-            decision, reason = AuthorisationDecision.ALLOW, "Covered by an active grant."
-        else:
-            decision = AuthorisationDecision.ASK
-            reason = "Not granted. Prepare the work as a draft and ask the principal to approve."
-        result = Authorisation(
-            workflow=workflow,
-            action=action,
-            decision=decision,
-            grant_ids=sorted(g.id for g in grants),
-            reason=reason,
-            checked_by=actor,
-            checked_at=self.now(),
-        )
-        self.store.record_event(
-            actor=actor,
-            action=f"authorise.{decision.value}",
-            entity_type="authorisation",
-            entity_id=f"{workflow}:{action}",
-            payload=result.model_dump(mode="json"),
-        )
+        now = self.now()
+        if attempt_id is not None:
+            attempt_id = safe_request_id(attempt_id)
+        with self.store.transaction():
+            in_date = [
+                grant
+                for grant in self.store.select(
+                    Grant,
+                    lambda g: g.workflow in (workflow, GLOBAL_WORKFLOW) and action in g.actions,
+                )
+                if grant.in_date(now)
+            ]
+            repeats = [g for g in in_date if attempt_id is not None and g.used_by(attempt_id)]
+            usable = [g for g in in_date if not g.exhausted and g not in repeats]
+            unlimited = [g for g in usable if g.max_uses is None]
+            covering: list[Grant] = []
+            if repeats:
+                covering, reason = repeats, "Already allowed for this attempt."
+            elif unlimited:
+                covering, reason = unlimited, "Covered by an active grant."
+            elif usable:
+                grant = min(usable, key=lambda g: (g.expires_at or _LATEST, g.granted_at))
+                if attempt_id is None:
+                    reason = (
+                        f"Covered by an approval with {grant.uses_left} use(s) left. The tool "
+                        "call that acts on it spends a use."
+                    )
+                else:
+                    use = GrantUse(attempt_id=attempt_id, actor=actor, at=now)
+                    grant = grant.model_copy(update={"uses": [*grant.uses, use]})
+                    self.store.put(grant, actor=actor, action="grant.used")
+                    reason = (
+                        f"Covered by an approval. This attempt used it: {grant.uses_left} left."
+                    )
+                covering = [grant]
+            else:
+                reason = ASK_REASON
+            result = Authorisation(
+                workflow=workflow,
+                action=action,
+                decision=AuthorisationDecision.ALLOW if covering else AuthorisationDecision.ASK,
+                grant_ids=sorted(g.id for g in covering),
+                reason=reason,
+                checked_by=actor,
+                checked_at=now,
+                attempt_id=attempt_id,
+            )
+            self.store.record_event(
+                actor=actor,
+                action=f"authorise.{result.decision.value}",
+                entity_type="authorisation",
+                entity_id=f"{workflow}:{action}",
+                payload=result.model_dump(mode="json"),
+            )
         return result
 
     def record_correction(
@@ -700,8 +992,13 @@ class TwinService:
         cases = self.store.select(EvalCase, lambda case: case.episode_id == episode_id)
         case_ids = {case.id for case in cases}
         results = self.store.select(EvalResult, lambda result: result.case_id in case_ids)
+        receipts = self.store.select(
+            Receipt, lambda receipt: receipt.entity_id in {episode_id, *lesson_ids}
+        )
         redacted = 0
         with self.store.transaction():
+            for receipt in receipts:
+                redacted += self.store.erase(Receipt, receipt.id, actor=actor, reason=reason)
             for packet in packets:
                 redacted += self.store.erase(HandoffPacket, packet.id, actor=actor, reason=reason)
             for lesson in lessons:
@@ -719,5 +1016,6 @@ class TwinService:
             "lessons": sorted(lesson_ids),
             "handoffs": sorted(packet.id for packet in packets),
             "eval_cases": sorted(case_ids),
+            "receipts": len(receipts),
             "events_redacted": redacted,
         }

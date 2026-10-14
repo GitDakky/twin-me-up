@@ -19,7 +19,7 @@ from typing import Any
 
 from pydantic import Field, field_validator
 
-from .models import Action, AuthorisationDecision, Model, Slug
+from .models import Action, AuthorisationDecision, Model, Slug, new_id
 from .service import RESERVED_ACTION_PREFIX, TwinService
 
 
@@ -115,6 +115,13 @@ def pre_tool_call(
     dialect: Dialect,
     principal: str = "the principal",
 ) -> HookResponse:
+    """Decide one tool call. An allowed call spends one use of an approval, never more.
+
+    Hosts run the hook once per tool call, so every run is its own attempt. Host call ids are
+    not used: some providers reuse them across turns and sessions, and a reused id must never
+    make a new call look like a repeat of one already allowed. Durable hosts that do replay a
+    call (Pi Durable) pass their own stable attempt id through twin_authorise instead.
+    """
     tool_name = str(payload.get("tool_name") or "")
     matched = action_map.match(tool_name, payload.get("tool_input"))
     if matched is None:
@@ -123,7 +130,9 @@ def pre_tool_call(
     rule_key = f"twinmeup:{workflow}:{action}"
     if workflow is None:
         return blocked(f"Twin Me Up: no workflow configured for '{action}'. Fix the action map.")
-    result = service.authorise(workflow=workflow, action=action, actor=actor)
+    result = service.authorise(
+        workflow=workflow, action=action, actor=actor, attempt_id=new_id("at")
+    )
     if action.startswith(RESERVED_ACTION_PREFIX):
         return blocked(
             f"Twin Me Up: agents may not act as {principal} on the twin or change its store or "

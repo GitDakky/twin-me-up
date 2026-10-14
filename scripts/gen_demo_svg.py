@@ -49,7 +49,10 @@ SCRIPT = [
     Line("You are acting as a delegate of Alex in the 'quote-review' workflow.", "result"),
     Line("HARD LIMITS: Never instruct a contractor without my written approval.", "result"),
     Line('twin_authorise(workflow: "quote-review", action: "email.send")', "tool", pause=1.0),
-    Line("ask: Not granted. Prepare the work as a draft and ask the principal to approve.", "ask"),
+    Line(
+        "ask: Not granted. Prepare a draft, then request approval with twin_request_approval.",
+        "ask",
+    ),
     Line("Draft ready. Sending it needs your approval. Shall I send it?", "agent", pause=0.9),
     Line("Bash(git push origin main)", "tool", pause=1.1),
     Line(

@@ -6,11 +6,12 @@ import asyncio
 import functools
 import json
 import os
+import re
 import sys
 import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from importlib import resources
 from pathlib import Path
 from typing import Any, NoReturn, ParamSpec, TypeVar
@@ -20,7 +21,7 @@ from pydantic import BaseModel, ValidationError
 
 from . import __version__, identity, probes
 from . import connect as connections
-from .errors import TwinMeUpError
+from .errors import StateError, TwinMeUpError
 from .evals import compare, render_report, run_eval, score_run
 from .hooks import ActionMap, Dialect, HookResponse, pre_tool_call, unavailable
 from .identity import (
@@ -33,6 +34,7 @@ from .identity import (
     save_settings,
 )
 from .models import (
+    ApprovalRequest,
     Episode,
     EvalArm,
     EvalSet,
@@ -57,6 +59,9 @@ app = typer.Typer(help="Governed professional twins.", no_args_is_help=True)
 episode_app = typer.Typer(help="Record and enrich real decisions.", no_args_is_help=True)
 lesson_app = typer.Typer(help="Propose and review learned guidance.", no_args_is_help=True)
 grant_app = typer.Typer(help="Explicit authority from a human principal.", no_args_is_help=True)
+approvals_app = typer.Typer(
+    help="Approve or decline what agents have asked to do.", no_args_is_help=True
+)
 eval_app = typer.Typer(help="Held-out evaluation against baselines.", no_args_is_help=True)
 audit_app = typer.Typer(help="Tamper-evident audit log.", no_args_is_help=True)
 erase_app = typer.Typer(
@@ -79,6 +84,7 @@ for sub, name in (
     (episode_app, "episode"),
     (lesson_app, "lesson"),
     (grant_app, "grant"),
+    (approvals_app, "approvals"),
     (eval_app, "eval"),
     (audit_app, "audit"),
     (erase_app, "erase"),
@@ -316,7 +322,14 @@ def status(ctx: typer.Context) -> None:
     service = _service(ctx)
     counts = {name: len(rows) for name, rows in service.store.dump().items()}
     problems = service.store.verify_chain()
-    _emit({"counts": counts, "audit_head": service.store.head(), "audit_ok": not problems})
+    _emit(
+        {
+            "counts": counts,
+            "pending_approvals": len(service.approvals(pending_only=True)),
+            "audit_head": service.store.head(),
+            "audit_ok": not problems,
+        }
+    )
 
 
 # --- probes ---------------------------------------------------------------------------
@@ -478,12 +491,20 @@ def grant_add(
     workflow: str = typer.Option(...),
     action: list[str] = typer.Option(..., help="Permitted action. Repeatable."),
     expires: datetime = typer.Option(None, help="ISO date or datetime, UTC if no zone."),
+    uses: int = typer.Option(
+        None, min=1, help="Spent after this many enforced uses. Default: unlimited until expiry."
+    ),
     note: str = typer.Option(None),
 ) -> None:
     """Grant authority. Humans only."""
     _emit(
         _service(ctx).grant(
-            workflow=workflow, actions=action, actor=_human(ctx), expires_at=expires, note=note
+            workflow=workflow,
+            actions=action,
+            actor=_human(ctx),
+            expires_at=expires,
+            note=note,
+            max_uses=uses,
         )
     )
 
@@ -501,6 +522,67 @@ def grant_list(ctx: typer.Context, workflow: str = typer.Option(None)) -> None:
 @guard
 def grant_revoke(ctx: typer.Context, grant_id: str, note: str = typer.Option(None)) -> None:
     _emit(_service(ctx).revoke_grant(grant_id, actor=_human(ctx), note=note))
+
+
+# --- approvals ------------------------------------------------------------------------
+
+
+def _duration(text: str) -> timedelta:
+    found = re.fullmatch(r"(\d+)\s*([mhd])", text.strip().lower())
+    if found is None or int(found.group(1)) == 0:
+        raise StateError(f"use a duration like 30m, 2h or 1d, not {text!r}")
+    unit = {"m": "minutes", "h": "hours", "d": "days"}[found.group(2)]
+    return timedelta(**{unit: int(found.group(1))})
+
+
+@approvals_app.command("list")
+@guard
+def approvals_list(
+    ctx: typer.Context,
+    workflow: str = typer.Option(None),
+    show_all: bool = typer.Option(False, "--all", help="Include decided requests."),
+) -> None:
+    """Requests waiting for you, oldest first."""
+    service = _service(ctx)
+    requests = service.approvals(workflow=workflow, pending_only=not show_all)
+    _emit([service.approval_view(a) for a in sorted(requests, key=lambda a: a.requested_at)])
+
+
+@approvals_app.command("show")
+@guard
+def approvals_show(ctx: typer.Context, approval_id: str) -> None:
+    service = _service(ctx)
+    _emit(service.approval_view(service.store.get(ApprovalRequest, approval_id)))
+
+
+@approvals_app.command("approve")
+@guard
+def approvals_approve(
+    ctx: typer.Context,
+    approval_id: str,
+    valid_for: str = typer.Option("1h", "--for", help="How long it stays usable: 30m, 2h, 1d."),
+    uses: int = typer.Option(1, min=1, help="How many attempts it covers."),
+    note: str = typer.Option(None, help="Why, or any condition. Kept as learning."),
+) -> None:
+    """Approve a request. Humans only. Grants exactly that action, once by default."""
+    service = _service(ctx)
+    expires_at = service.now() + _duration(valid_for)
+    approved = service.approve(
+        approval_id, actor=_human(ctx), expires_at=expires_at, max_uses=uses, note=note
+    )
+    _emit(service.approval_view(approved))
+
+
+@approvals_app.command("decline")
+@guard
+def approvals_decline(
+    ctx: typer.Context,
+    approval_id: str,
+    note: str = typer.Option(..., help="Why. Kept as learning."),
+) -> None:
+    """Decline a request. Humans only."""
+    service = _service(ctx)
+    _emit(service.approval_view(service.decline(approval_id, actor=_human(ctx), note=note)))
 
 
 # --- handoff --------------------------------------------------------------------------
@@ -555,11 +637,19 @@ def brief(
 @app.command()
 @guard
 def authorise(
-    ctx: typer.Context, workflow: str = typer.Option(...), action: str = typer.Option(...)
+    ctx: typer.Context,
+    workflow: str = typer.Option(...),
+    action: str = typer.Option(...),
+    attempt: str = typer.Option(
+        None, help="Id of the call about to run, for enforcement. It spends one use of an approval."
+    ),
 ) -> None:
     """Check authority. Exit 0 when allowed, 3 when approval is needed. For pre-action hooks."""
     result = _service(ctx).authorise(
-        workflow=workflow, action=action, actor=_actor(ctx, default_agent=True)
+        workflow=workflow,
+        action=action,
+        actor=_actor(ctx, default_agent=True),
+        attempt_id=attempt,
     )
     _emit(result)
     if result.decision.value != "allow":
@@ -852,20 +942,36 @@ def skill_show() -> None:
     typer.echo(_asset("skill", "SKILL.md").read_text(encoding="utf-8"), nl=False)
 
 
+_EXTENSIONS = {
+    "pi": ("twin-me-up", "cd {target} && npm install"),
+    "pi-durable": (
+        "twin-me-up-durable",
+        'In your Harness: import {{ createTwinMeUp }} from "{target}/index.ts"; '
+        'registry.install(createTwinMeUp({{ workflow: "general", actionMap: "map.json" }}))',
+    ),
+}
+
+
 @extension_app.command("export")
 @guard
 def extension_export(
-    system: str = typer.Argument(..., help="Agent system with a native extension: pi."),
+    system: str = typer.Argument(..., help="Agent system with a native extension: pi, pi-durable."),
     directory: Path = typer.Argument(..., help="Its extensions directory."),
 ) -> None:
     """Write a native extension. Other systems connect over MCP: see `twinmeup connect`."""
-    if system != "pi":
-        _fail("only pi has a native extension; other systems use MCP (twinmeup connect --list)")
-    target = directory.expanduser() / "twin-me-up"
+    if system not in _EXTENSIONS:
+        _fail(
+            "native extensions exist for pi and pi-durable; other systems use MCP "
+            "(twinmeup connect --list)"
+        )
+    folder, next_step = _EXTENSIONS[system]
+    target = directory.expanduser() / folder
     target.mkdir(parents=True, exist_ok=True)
     for name in ("index.ts", "package.json"):
-        (target / name).write_text(_asset("pi", name).read_text(encoding="utf-8"), encoding="utf-8")
-    _emit({"written": str(target), "next": f"cd {target} && npm install"})
+        (target / name).write_text(
+            _asset(system, name).read_text(encoding="utf-8"), encoding="utf-8"
+        )
+    _emit({"written": str(target), "next": next_step.format(target=target)})
 
 
 async def _handshake(command: str, home: Path) -> list[str]:

@@ -21,6 +21,7 @@ import { Type } from "typebox";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 
 type Rule = { tool: string; action: string; workflow?: string; input_regex?: string };
 type ActionMap = { workflow?: string; rules: Rule[] };
@@ -71,7 +72,7 @@ function parameters(schema: any): any {
 }
 
 export default async function (pi: ExtensionAPI) {
-  const client = new Client({ name: "pi-twin-me-up", version: "0.1.0" });
+  const client = new Client({ name: "pi-twin-me-up", version: "0.2.0" });
   await client.connect(
     new StdioClientTransport({
       command: COMMAND,
@@ -137,13 +138,21 @@ export default async function (pi: ExtensionAPI) {
       }
       let result: any;
       try {
-        result = await call("twin_authorise", { workflow: matched.workflow, action: matched.action });
+        // Each tool_call event is one attempt: an approval covers exactly one governed call.
+        // Provider call ids are not used, since some reuse them from turn to turn.
+        result = await call("twin_authorise", {
+          workflow: matched.workflow,
+          action: matched.action,
+          attempt_id: `pi-${randomUUID()}`,
+        });
       } catch (error) {
         // Fail closed: a governed action is blocked when the twin cannot decide.
         return { block: true, reason: `Twin Me Up unavailable, so '${matched.action}' is blocked: ${String(error)}` };
       }
       if (result.structuredContent?.decision === "allow") return undefined;
-      const reason = `Twin Me Up: '${matched.action}' is not granted in '${matched.workflow}'. ${WHO} must approve.`;
+      const reason =
+        `Twin Me Up: '${matched.action}' is not granted in '${matched.workflow}'. ${WHO} must approve. ` +
+        "Request it with twin_request_approval and wait until twin_approval_status says approved.";
       if (ctx?.hasUI && (await ctx.ui.confirm("Approval needed", `${reason}\n\nApprove this once?`))) {
         return undefined;
       }

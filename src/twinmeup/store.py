@@ -22,6 +22,7 @@ from pydantic import BaseModel
 from .errors import IntegrityError, NotFoundError, StateError
 from .models import (
     SCHEMA_VERSION,
+    ApprovalRequest,
     Episode,
     EvalAnswer,
     EvalCase,
@@ -31,6 +32,7 @@ from .models import (
     Grant,
     HandoffPacket,
     Lesson,
+    Receipt,
     utcnow,
     validate_actor,
 )
@@ -42,12 +44,14 @@ TYPES: dict[str, type[BaseModel]] = {
     "episode": Episode,
     "lesson": Lesson,
     "grant": Grant,
+    "approval": ApprovalRequest,
     "handoff": HandoffPacket,
     "eval_set": EvalSet,
     "eval_case": EvalCase,
     "eval_answer": EvalAnswer,
     "eval_run": EvalRun,
     "eval_result": EvalResult,
+    "receipt": Receipt,
 }
 TYPE_NAMES: dict[type[BaseModel], str] = {cls: name for name, cls in TYPES.items()}
 
@@ -118,10 +122,27 @@ class Store:
             self._conn.execute(
                 "INSERT INTO meta(key, value) VALUES('schema_version', ?)", (str(SCHEMA_VERSION),)
             )
-        elif int(row["value"]) > SCHEMA_VERSION:
-            raise StateError(
-                f"store schema {row['value']} is newer than this package ({SCHEMA_VERSION})"
-            )
+            return
+        stored = int(row["value"])
+        if stored > SCHEMA_VERSION:
+            raise StateError(f"store schema {stored} is newer than this package ({SCHEMA_VERSION})")
+        if stored < SCHEMA_VERSION:
+            self._migrate(stored)
+
+    def _migrate(self, stored: int) -> None:
+        """Bring an older store up to date. Each step must keep every existing record valid.
+
+        Version 2 added approvals, limited-use grants and receipts: new record types and
+        optional fields only, so existing records load unchanged.
+        """
+        self._conn.execute(
+            "UPDATE meta SET value=? WHERE key='schema_version'", (str(SCHEMA_VERSION),)
+        )
+        self._conn.execute(
+            "INSERT INTO meta(key, value) VALUES('migrated_from', ?) "
+            "ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            (str(stored),),
+        )
 
     def close(self) -> None:
         with self._lock:

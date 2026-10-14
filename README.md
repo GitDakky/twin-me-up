@@ -185,6 +185,8 @@ flowchart LR
 |---|---|
 | `twin_brief` | Your confirmed guidance and current authority for a workflow. Call it at the start of work. |
 | `twin_authorise` | May I do this now? Returns `allow` with the covering grant, or `ask`. |
+| `twin_request_approval` | Ask you to approve one action. You decide in your own terminal. |
+| `twin_approval_status` | Has the request been approved, declined or not yet decided? |
 | `twin_search` | Find confirmed guidance relevant to a question. |
 | `twin_review_queue` | Unconfirmed lessons to show you for review. |
 | `twin_track_record` | Evidence and stage for a workflow: learning, corrections, evaluations and grants. |
@@ -203,9 +205,29 @@ These commands need your passphrase, so agents cannot run them.
 | `twinmeup init` | Set your name and passphrase |
 | `twinmeup lesson confirm`, `reject`, `revise`, `retire` | Decide what your twin has learned |
 | `twinmeup grant add`, `revoke` | Give or withdraw authority |
+| `twinmeup approvals approve`, `decline` | Decide what agents have asked to do |
 | `twinmeup eval create`, `add-case`, `from-episode`, `freeze` | Build held-out evaluation sets |
 | `twinmeup export` | Write a portable bundle of your twin |
 | `twinmeup erase episode` | Erase a decision and everything derived from it |
+
+### Approvals
+
+An agent that needs an action it has not been granted asks for it, then waits:
+
+1. `twin_authorise` says `ask`. The agent prepares a draft and calls `twin_request_approval`
+   with a one-line summary of what and why.
+2. You see the request with `twinmeup approvals list` and decide in your own terminal:
+   `twinmeup approvals approve <id>`, or `twinmeup approvals decline <id> --note "why"`.
+3. The agent checks `twin_approval_status` and acts only once it says `approved`.
+
+An approval grants exactly the action requested, once and for an hour, unless you say otherwise
+(`--uses 3`, `--for 1d`). Where a hook enforces, the tool call that acts spends it, so another
+attempt needs another request. Every approval and decline is also recorded as a decision, so
+your twin learns where your lines are. Requests survive restarts, and an agent that asks twice
+gets its first request back.
+
+Write tools also take an optional `request_id`. A retry with the same id, after a dropped
+connection or a crash, returns the first result instead of recording twice.
 
 ## Works with
 
@@ -214,13 +236,14 @@ machine. All the guides are also in [docs/integrations.md](https://github.com/Gi
 
 | System | How it connects | Verified live |
 |---|---|---|
-| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | MCP server, skill, `pre_tool_call` hook | Connected, 10 tools discovered |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | MCP server, skill, `pre_tool_call` hook | Connected, all tools discovered |
 | [pi](https://github.com/earendil-works/pi) | Native extension: brief injection, tools, enforcement | Brief injected, tool called, `git push` blocked |
 | Claude Code | MCP server, skill, `PreToolUse` hook | Connected |
 | OpenAI Codex CLI | MCP server | Configuration accepted |
 | Gemini CLI | MCP server | Connected |
-| Cursor and Cursor Agent | MCP server | 10 tools listed |
+| Cursor and Cursor Agent | MCP server | All tools listed |
 | OpenCode | MCP server | Connected |
+| [Pi Durable](https://github.com/earendil-works/pi) 1.2.0 | Extension (experimental) | Ungranted push blocked; one approval allowed exactly one push; a wait survived a crash and restart |
 | VS Code (Copilot agent mode) | MCP server | Documented, not yet run |
 | Goose | MCP extension | Documented, not yet run |
 | Microsoft Agent Framework | MCP stdio tool | Tools listed and called |
@@ -228,7 +251,8 @@ machine. All the guides are also in [docs/integrations.md](https://github.com/Gi
 | LangChain and LangGraph | `langchain-mcp-adapters` | Tools listed and called |
 | Anything else | MCP, or OpenAI and Anthropic function schemas with a CLI bridge | |
 
-Checked in October 2026 against current releases. The framework checks are reproducible with
+Checked in October 2026 against current releases. The host checks ran on 0.1.0; 0.2.0 adds
+two tools to the same MCP server, and the Pi Durable check ran on 0.2.0. The framework checks are reproducible with
 [`scripts/interop/frameworks.py`](https://github.com/GitDakky/twin-me-up/blob/main/scripts/interop/frameworks.py). Got it working
 somewhere marked "not yet run"? [Tell us how](https://github.com/GitDakky/twin-me-up/issues/new?template=integration.yml).
 
@@ -334,6 +358,27 @@ needs an explicit grant from you.
 
 See [SECURITY.md](https://github.com/GitDakky/twin-me-up/blob/main/SECURITY.md) for the threat model and how to report a vulnerability.
 
+## Where it can still fail
+
+Twin Me Up narrows what agents may do. It does not make an agent safe on its own.
+
+- **Without a hook, the twin advises.** Over MCP alone it tells an agent what it may do, and
+  nothing stops an agent that ignores it. Enforcement needs a pre-action hook: Hermes, Claude
+  Code, Cursor, pi or Pi Durable.
+- **Hooks govern only mapped calls.** A tool or command your action map does not match is left
+  to the host's own permissions.
+- **Without a hook, an approval is time-boxed, not single-use.** The hook is what spends it, so
+  over MCP alone an approved action stays allowed until it expires.
+- **A grant is not a sandbox.** An allowed action runs with the agent's full permissions.
+- **Retries are safe only with a `request_id`.** A write retried without one can be recorded
+  twice.
+- **Your passphrase is the boundary.** Anyone with it and your terminal can confirm lessons and
+  approve requests. Agents never receive it, and a compromised machine is out of scope.
+- **Files are private, not encrypted.** The store and settings are readable only by your user
+  account. Encryption at rest is not built in yet.
+- **A prediction is not consent.** The twin learns how you decide, and never treats a forecast
+  of your answer as your approval.
+
 ## Your data
 
 - Everything lives in `~/.twinmeup` (set `TWINMEUP_HOME` to move it). Files are readable by
@@ -382,13 +427,14 @@ trusted on feel. The full review, with every source and the regulatory lines it 
 | `twinmeup episode add, amend, list, show, gaps` | Recorded decisions |
 | `twinmeup lesson propose, list, confirm, reject, revise, retire, history` | Learned guidance |
 | `twinmeup grant add, list, revoke` | Authority |
+| `twinmeup approvals list, show, approve, decline` | Requests from agents; approve and decline are human only |
 | `twinmeup eval create, add-case, from-episode, freeze, list, run, report` | Held-out evaluation |
 | `twinmeup probes onboarding` | Interview questions for a new workflow |
 | `twinmeup tools list, schema, call` | The agent protocol without MCP |
 | `twinmeup hook pre-tool-call` | Enforcement for host hooks |
 | `twinmeup action-map example, matcher, check` | Build and test enforcement maps |
 | `twinmeup skill export, show` | The agent skill that teaches the loop |
-| `twinmeup extension export pi` | The native pi extension |
+| `twinmeup extension export pi`, `pi-durable` | Native extensions for pi and Pi Durable (experimental) |
 | `twinmeup audit verify, log` | The tamper-evident audit log |
 | `twinmeup export` | Portable bundle (human only) |
 | `twinmeup erase episode` | Erasure with derived records (human only) |

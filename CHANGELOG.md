@@ -6,11 +6,38 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-14
+
 ### Added
 
+- Durable approvals. When `twin_authorise` says ask, an agent requests approval with
+  `twin_request_approval` and waits on `twin_approval_status`. You decide with
+  `twinmeup approvals approve` or `decline`, behind your passphrase. An approval grants exactly
+  that action, once and for an hour unless you say otherwise (`--uses`, `--for`), and every
+  approval or decline is recorded as a decision the twin learns from.
+- Limited grants: `twinmeup grant add --uses N`. Enforcement hooks spend one use per governed
+  tool call; advisory checks never spend anything.
+- Safe retries. Every write tool takes an optional `request_id`, and a retry with the same id
+  returns the first result instead of recording twice, also after a crash.
+- A Pi Durable extension (experimental), from `twinmeup extension export pi-durable`: the twin's
+  tools, your brief in the system prompt, and enforcement that can ask you and wait through a
+  restart. Tested live against Pi Durable 1.2.0.
 - A desktop extension bundle (`.mcpb`) for Claude Desktop, Smithery and other MCPB hosts. It
   uses the uv runtime, so one bundle works on every platform, and each release builds and
   attaches it.
+- `twinmeup status` reports pending approvals.
+
+### Changed
+
+- The store schema is version 2. Older stores migrate when opened.
+- An `ask` tells the agent how to request approval.
+- The agent skill teaches the approval step and request ids, and is licensed Apache-2.0 like
+  the rest of the project.
+
+### Security
+
+- Every governed tool call is its own attempt. Host tool-call ids are never used to recognise
+  a repeat, because some providers reuse them across turns and sessions.
 
 ## [0.1.0] - 2026-10-14
 

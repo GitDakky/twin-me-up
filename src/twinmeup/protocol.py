@@ -23,12 +23,14 @@ from .errors import TwinMeUpError
 from .models import (
     MAX_ITEMS,
     Action,
+    ApprovalRequest,
     Episode,
     LessonKind,
     LessonOrigin,
     LessonStatus,
     Model,
     Option,
+    RequestId,
     Short,
     Slug,
     SourceRef,
@@ -43,10 +45,17 @@ PROTOCOL_VERSION = "1"
 SERVER_INSTRUCTIONS = (
     "Twin Me Up protocol. At the start of work in a workflow, call twin_brief and follow it: it "
     "holds the principal's confirmed guidance, hard limits, your authority and stop conditions. "
-    "Call twin_authorise before any consequential action and obey 'ask'. When the principal "
-    "corrects you, call twin_record_correction. Propose new guidance with twin_propose_lesson; "
-    "it is never authoritative until the principal confirms it. You cannot confirm learning or "
-    "grant yourself authority."
+    "Call twin_authorise before any consequential action and obey 'ask': prepare a draft, call "
+    "twin_request_approval, and act only once twin_approval_status says approved. When the "
+    "principal corrects you, call twin_record_correction. Propose new guidance with "
+    "twin_propose_lesson; it is never authoritative until the principal confirms it. Give write "
+    "tools a request_id so a retry never records twice. You cannot confirm learning, approve "
+    "requests or grant yourself authority."
+)
+
+REQUEST_ID_HELP = (
+    "Optional idempotency key, for example your tool call id. A retry with the same request_id "
+    "returns the first result instead of recording twice."
 )
 
 
@@ -67,6 +76,29 @@ class BriefInput(Model):
 class AuthoriseInput(Model):
     workflow: Slug
     action: Action = Field(description="The action you intend to take, for example email.send.")
+    attempt_id: RequestId | None = Field(
+        default=None,
+        description="For enforcement hooks only: the id of the tool call about to run. It spends "
+        "one use of an approval; repeating the same attempt_id is safe. Agents leave this unset.",
+    )
+
+
+class RequestApprovalInput(Model):
+    workflow: Slug
+    action: Action = Field(description="The one action you need approved, for example repo.push.")
+    summary: Text = Field(
+        description="What you will do and why, in a sentence or two. The principal decides on this."
+    )
+    details: Text | None = Field(
+        default=None,
+        description="Anything that helps them decide: recipients, amounts, a diff summary.",
+    )
+    sources: list[SourceRef] = Field(default_factory=list, max_length=MAX_ITEMS)
+    request_id: RequestId | None = Field(default=None, description=REQUEST_ID_HELP)
+
+
+class ApprovalStatusInput(Model):
+    approval_id: str = Field(description="The approval_id twin_request_approval returned.")
 
 
 class SearchInput(Model):
@@ -104,6 +136,7 @@ class RecordDecisionInput(Model):
     escalation_triggers: list[Text] = Field(default_factory=list, max_length=MAX_ITEMS)
     outcome: Text | None = None
     sources: list[SourceRef] = Field(default_factory=list, max_length=MAX_ITEMS)
+    request_id: RequestId | None = Field(default=None, description=REQUEST_ID_HELP)
 
 
 class AmendDecisionInput(Model):
@@ -111,6 +144,7 @@ class AmendDecisionInput(Model):
     changes: dict[str, Any] = Field(
         description="Fields to merge into the recorded decision, using record_decision names."
     )
+    request_id: RequestId | None = Field(default=None, description=REQUEST_ID_HELP)
 
 
 class RecordCorrectionInput(Model):
@@ -120,6 +154,7 @@ class RecordCorrectionInput(Model):
     human_decision: Text = Field(description="What the principal chose instead.")
     reason: Text | None = Field(default=None, description="The principal's reason, if given.")
     sources: list[SourceRef] = Field(default_factory=list, max_length=MAX_ITEMS)
+    request_id: RequestId | None = Field(default=None, description=REQUEST_ID_HELP)
 
 
 class ProposeLessonInput(Model):
@@ -135,6 +170,7 @@ class ProposeLessonInput(Model):
     episode_ids: list[str] = Field(default_factory=list, max_length=MAX_ITEMS)
     confidence: float | None = Field(default=None, ge=0, le=1)
     review_by: date | None = None
+    request_id: RequestId | None = Field(default=None, description=REQUEST_ID_HELP)
 
 
 # --- handlers ---------------------------------------------------------------------------
@@ -158,9 +194,48 @@ def _brief(service: TwinService, actor: str, args: BriefInput, principal: str) -
 
 
 def _authorise(service: TwinService, actor: str, args: AuthoriseInput, _: str) -> dict[str, Any]:
-    return service.authorise(workflow=args.workflow, action=args.action, actor=actor).model_dump(
-        mode="json"
+    return service.authorise(
+        workflow=args.workflow, action=args.action, actor=actor, attempt_id=args.attempt_id
+    ).model_dump(mode="json")
+
+
+_APPROVAL_NOTES = {
+    "pending": "Waiting for {who}. Do not act yet: check twin_approval_status before acting.",
+    "approved": "Approved. Act now, exactly as requested: the approval covers {uses} attempt(s).",
+    "used": "Already used. Request approval again for another attempt.",
+    "expired": "Expired unused. Request approval again if the work still needs this action.",
+    "revoked": "Revoked by {who}. Do not act.",
+    "declined": "Declined by {who}. Do not act; read the decision note and adjust the plan.",
+    "not_needed": "An active grant already covers this action. Check with twin_authorise.",
+}
+
+
+def _approval_reply(view: dict[str, Any], principal: str) -> dict[str, Any]:
+    note = _APPROVAL_NOTES[view["status"]].format(who=principal, uses=view.get("uses_left"))
+    if view["status"] == "pending":
+        note += f" {principal} decides with: twinmeup approvals approve {view['approval_id']}"
+    return {**view, "note": note}
+
+
+def _request_approval(
+    service: TwinService, actor: str, args: RequestApprovalInput, principal: str
+) -> dict[str, Any]:
+    view = service.request_approval(
+        workflow=args.workflow,
+        action=args.action,
+        summary=args.summary,
+        details=args.details,
+        sources=args.sources,
+        actor=actor,
     )
+    return _approval_reply(view, principal)
+
+
+def _approval_status(
+    service: TwinService, actor: str, args: ApprovalStatusInput, principal: str
+) -> dict[str, Any]:
+    approval = service.store.get(ApprovalRequest, args.approval_id)
+    return _approval_reply(service.approval_view(approval), principal)
 
 
 def _search(service: TwinService, actor: str, args: SearchInput, _: str) -> dict[str, Any]:
@@ -229,7 +304,8 @@ def _episode_reply(episode: Episode) -> dict[str, Any]:
 
 
 def _record(service: TwinService, actor: str, args: RecordDecisionInput, _: str) -> dict[str, Any]:
-    return _episode_reply(service.record_episode(args.model_dump(mode="json"), actor=actor))
+    data = args.model_dump(mode="json", exclude={"request_id"})
+    return _episode_reply(service.record_episode(data, actor=actor))
 
 
 def _amend(service: TwinService, actor: str, args: AmendDecisionInput, _: str) -> dict[str, Any]:
@@ -302,10 +378,30 @@ TOOLS: tuple[ToolSpec, ...] = (
         "twin_authorise",
         "Check authority for an action",
         "Call before any consequential action (sending, paying, committing, writing to live "
-        "systems). 'allow' means an active grant covers it. 'ask' means stop and get approval.",
+        "systems). 'allow' means an active grant covers it. 'ask' means stop, prepare a draft "
+        "and request approval with twin_request_approval.",
         AuthoriseInput,
         True,
         _authorise,
+    ),
+    ToolSpec(
+        "twin_request_approval",
+        "Ask the principal to approve an action",
+        "Call when twin_authorise says 'ask' and the work needs that action. Records one request "
+        "the principal approves or declines in their own terminal. Do not act until "
+        "twin_approval_status says approved; an approval covers one attempt unless they say more.",
+        RequestApprovalInput,
+        False,
+        _request_approval,
+    ),
+    ToolSpec(
+        "twin_approval_status",
+        "Check an approval request",
+        "Whether the principal has approved, declined or not yet decided a request, and whether "
+        "the approval is still unused. Poll this while you wait; it changes nothing.",
+        ApprovalStatusInput,
+        True,
+        _approval_status,
     ),
     ToolSpec(
         "twin_search",
@@ -390,7 +486,16 @@ def call_tool(
     if spec is None:
         raise TwinMeUpError(f"unknown tool {name!r}; available: {sorted(BY_NAME)}")
     args = spec.input_model.model_validate(arguments or {})
-    return spec.handler(service, actor, args, principal)
+    request_id = getattr(args, "request_id", None)
+    if spec.read_only or request_id is None:
+        return spec.handler(service, actor, args, principal)
+    return service.once(
+        actor=actor,
+        tool=name,
+        request_id=request_id,
+        arguments=args.model_dump(mode="json", exclude={"request_id"}),
+        run=lambda: spec.handler(service, actor, args, principal),
+    )
 
 
 # --- schemas ----------------------------------------------------------------------------

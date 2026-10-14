@@ -7,10 +7,11 @@ guidance a human principal has confirmed from it.
 
 from __future__ import annotations
 
+import hashlib
 import re
 from datetime import UTC, date, datetime
 from enum import StrEnum
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import uuid4
 
 from pydantic import (
@@ -22,7 +23,7 @@ from pydantic import (
     model_validator,
 )
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 GLOBAL_WORKFLOW = "all"
 MAX_TEXT = 4000
 MAX_ITEMS = 50
@@ -30,12 +31,16 @@ MAX_ITEMS = 50
 _SLUG = r"^[a-z0-9][a-z0-9._-]{0,63}$"
 _ACTOR = r"^(human|agent):[a-z0-9][a-z0-9._-]{0,63}$"
 _ACTION = r"^[a-z][a-z0-9_.:-]{0,63}$"
+# Idempotency keys and tool-call ids from hosts (toolu_..., call_..., parent/1): letters,
+# digits and a few separators.
+_REQUEST_ID = r"^[A-Za-z0-9][A-Za-z0-9_.:@/|+=-]{0,255}$"
 
 Text = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=MAX_TEXT)]
 Short = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=200)]
 Slug = Annotated[str, StringConstraints(pattern=_SLUG)]
 ActorId = Annotated[str, StringConstraints(pattern=_ACTOR)]
 Action = Annotated[str, StringConstraints(pattern=_ACTION)]
+RequestId = Annotated[str, StringConstraints(pattern=_REQUEST_ID)]
 
 
 def utcnow() -> datetime:
@@ -50,6 +55,13 @@ def validate_actor(actor: str) -> str:
     if re.fullmatch(_ACTOR, actor) is None:
         raise ValueError(f"actor must look like 'human:<name>' or 'agent:<name>', got {actor!r}")
     return actor
+
+
+def safe_request_id(raw: str) -> str:
+    """Use a host's call id as an attempt key, hashing any id this format does not allow."""
+    if re.fullmatch(_REQUEST_ID, raw):
+        return raw
+    return "h-" + hashlib.sha256(raw.encode("utf-8")).hexdigest()[:40]
 
 
 def is_human(actor: str) -> bool:
@@ -210,6 +222,19 @@ class Lesson(Model):
 # --- authority --------------------------------------------------------------------------
 
 
+class GrantUse(Model):
+    """One enforced attempt that relied on a limited grant."""
+
+    attempt_id: RequestId
+    actor: ActorId
+    at: datetime
+
+    @field_validator("at")
+    @classmethod
+    def _aware(cls, value: datetime) -> datetime:
+        return as_utc(value) or value
+
+
 class Grant(Model):
     """Explicit authority from a human principal: the only source of permission to act."""
 
@@ -222,16 +247,80 @@ class Grant(Model):
     revoked_at: datetime | None = None
     revoked_by: ActorId | None = None
     note: Text | None = None
+    # None means unlimited until expiry or revocation. Approvals issue single-use grants.
+    max_uses: int | None = Field(default=None, ge=1)
+    uses: list[GrantUse] = Field(default_factory=list)
+    approval_id: str | None = None
 
     @field_validator("expires_at", "revoked_at", "granted_at")
     @classmethod
     def _aware(cls, value: datetime | None) -> datetime | None:
         return as_utc(value)
 
-    def is_active(self, now: datetime) -> bool:
+    @property
+    def exhausted(self) -> bool:
+        return self.max_uses is not None and len(self.uses) >= self.max_uses
+
+    @property
+    def uses_left(self) -> int | None:
+        return None if self.max_uses is None else max(self.max_uses - len(self.uses), 0)
+
+    def in_date(self, now: datetime) -> bool:
         if self.revoked_at is not None:
             return False
         return self.expires_at is None or self.expires_at > now
+
+    def used_by(self, attempt_id: str) -> bool:
+        return any(use.attempt_id == attempt_id for use in self.uses)
+
+    def is_active(self, now: datetime) -> bool:
+        return self.in_date(now) and not self.exhausted
+
+
+class ApprovalStatus(StrEnum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    DECLINED = "declined"
+
+
+class ApprovalRequest(Model):
+    """An agent's request for the principal to approve one action.
+
+    Approving it issues a grant for exactly that action, single-use by default and short-lived,
+    so a waiting agent can act once and no more. Declining it is recorded with the reason.
+    """
+
+    id: str = Field(default_factory=lambda: new_id("ap"))
+    workflow: Slug
+    action: Action
+    summary: Text
+    details: Text | None = None
+    sources: list[SourceRef] = Field(default_factory=list, max_length=MAX_ITEMS)
+    requested_by: ActorId
+    requested_at: datetime = Field(default_factory=utcnow)
+    status: ApprovalStatus = ApprovalStatus.PENDING
+    decided_by: ActorId | None = None
+    decided_at: datetime | None = None
+    decision_note: Text | None = None
+    grant_id: str | None = None
+
+    @field_validator("requested_at", "decided_at")
+    @classmethod
+    def _aware(cls, value: datetime | None) -> datetime | None:
+        return as_utc(value)
+
+
+class Receipt(Model):
+    """The first result of a write made with a request_id. Retries get this result back."""
+
+    id: str
+    actor: ActorId
+    tool: str
+    request_id: RequestId
+    arguments_hash: str
+    entity_id: str | None = None
+    result: dict[str, Any]
+    created_at: datetime = Field(default_factory=utcnow)
 
 
 # --- handoff ----------------------------------------------------------------------------
@@ -293,6 +382,8 @@ class Authorisation(Model):
     reason: str
     checked_by: ActorId
     checked_at: datetime = Field(default_factory=utcnow)
+    # Set by enforcement hooks: the tool call about to run. It spends limited grants once.
+    attempt_id: str | None = None
 
 
 # --- evaluation -------------------------------------------------------------------------

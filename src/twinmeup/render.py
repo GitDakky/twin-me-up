@@ -85,6 +85,10 @@ def brief_text(packet: HandoffPacket, principal: str = "the principal") -> str:
     lines.append(
         "Before any other consequential action, call twin_authorise and follow its decision."
     )
+    lines.append(
+        "If it says ask, prepare a draft and call twin_request_approval. Act only once "
+        "twin_approval_status says approved."
+    )
     if packet.boundaries:
         lines += ["", "HARD LIMITS AND ESCALATION RULES (always apply)"]
         lines += [_line(lesson) for lesson in packet.boundaries]

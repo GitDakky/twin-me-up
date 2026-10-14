@@ -66,7 +66,7 @@
     <text x="28" y="310" class="ln l10 d" xml:space="preserve"><tspan class="d">  └ </tspan>You are acting as a delegate of Alex in the &#x27;quote-review&#x27; workflow.</text>
     <text x="28" y="334" class="ln l11 d" xml:space="preserve"><tspan class="d">  └ </tspan>HARD LIMITS: Never instruct a contractor without my written approval.</text>
     <text x="28" y="358" class="ln l12 " xml:space="preserve"><tspan class="b">● </tspan><tspan class="t">twin_authorise</tspan>(workflow: &quot;quote-review&quot;, action: &quot;email.send&quot;)</text>
-    <text x="28" y="382" class="ln l13 " xml:space="preserve"><tspan class="d">  └ </tspan><tspan class="a">ask:</tspan> Not granted. Prepare the work as a draft and ask the principal to approve.</text>
+    <text x="28" y="382" class="ln l13 " xml:space="preserve"><tspan class="d">  └ </tspan><tspan class="a">ask:</tspan> Not granted. Prepare a draft, then request approval with twin_request_approval.</text>
     <text x="28" y="406" class="ln l14 g" xml:space="preserve"><tspan class="b">● </tspan>Draft ready. Sending it needs your approval. Shall I send it?</text>
     <text x="28" y="430" class="ln l15 " xml:space="preserve"><tspan class="b">● </tspan><tspan class="t">Bash</tspan>(git push origin main)</text>
     <text x="28" y="454" class="ln l16 k" xml:space="preserve"><tspan class="d">  └ </tspan>Twin Me Up: &#x27;repo.push&#x27; is not granted in the &#x27;general&#x27; workflow. Alex must approve this action.</text>
