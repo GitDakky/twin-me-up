@@ -1,0 +1,11 @@
+{
+  "name": "pi-twin-me-up",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Twin Me Up protocol for the pi coding agent: tools, operating brief and authority enforcement.",
+  "type": "module",
+  "main": "index.ts",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

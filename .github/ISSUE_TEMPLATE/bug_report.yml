@@ -1,0 +1,71 @@
+name: Bug report
+description: Something does not work the way the docs say it should.
+title: "bug: "
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. Please remove anything personal from logs, records and paths before you post.
+
+        **Found a security problem?** Do not open an issue. [Report it privately](https://github.com/GitDakky/twin-me-up/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. twinmeup init
+        2. twinmeup connect claude-code
+        3. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where did it happen?
+      options:
+        - CLI
+        - MCP server
+        - Pre-action hook
+        - pi extension
+        - Evaluation
+        - Install or packaging
+        - Documentation
+        - Something else
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Agent system and version
+      placeholder: "For example Claude Code 2.1, Hermes Agent, pi, Cursor Agent"
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `twinmeup version` and `twinmeup doctor`
+      render: text
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Operating system and Python version
+      placeholder: "For example macOS 26.3, Python 3.12"
+    validations:
+      required: true
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I searched the existing issues and this is not a duplicate.
+          required: true
+        - label: I removed personal data from everything above.
+          required: true

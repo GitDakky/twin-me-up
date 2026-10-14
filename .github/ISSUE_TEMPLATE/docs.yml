@@ -1,0 +1,22 @@
+name: Documentation
+description: Something in the docs is wrong, missing or hard to follow.
+title: "docs: "
+labels: ["documentation", "needs triage"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Which page or section?
+      placeholder: "For example README, Teach your twin"
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing?
+    validations:
+      required: true
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested wording or fix

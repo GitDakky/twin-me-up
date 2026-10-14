@@ -1,0 +1,19 @@
+{
+  "workflow": "quote-review",
+  "situation": "Three roofing quotes for a block repair. The cheapest omits scaffolding and has no insurance certificate attached.",
+  "goal": "Fix the leak before winter without hidden extras.",
+  "options": [
+    {"id": "cheapest", "label": "Accept the cheapest quote"},
+    {"id": "mid", "label": "Accept the mid-priced complete quote"},
+    {"id": "retender", "label": "Retender with a fixed scope"}
+  ],
+  "chosen": "mid",
+  "rationale": "Complete scope at a fair price beats a low headline figure that returns as variations.",
+  "rejected": {
+    "cheapest": "Scaffolding omission would come back as a variation, and there is no insurance evidence."
+  },
+  "cues": ["Line items missing compared with the other quotes"],
+  "reversal_conditions": ["The cheapest contractor confirms scaffolding and insurance in writing"],
+  "escalation_triggers": ["Any quote above the approved budget"],
+  "sources": [{"kind": "document", "locator": "synthetic://quotes/roof-example"}]
+}

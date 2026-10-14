@@ -1,0 +1,44 @@
+name: Agent system integration
+description: Ask for a new agent system, or report how an existing integration works for you.
+title: "integration: "
+labels: ["integration", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Verification reports are some of the most valuable contributions. If you got Twin Me Up working with a system marked "Documented, not yet run", tell us exactly how.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is this?
+      options:
+        - Request support for a new agent system
+        - Report a successful verification
+        - Report a broken integration
+    validations:
+      required: true
+  - type: input
+    id: system
+    attributes:
+      label: Agent system and version
+      placeholder: "For example VS Code 1.105 with Copilot agent mode"
+    validations:
+      required: true
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: How does it load MCP servers, skills or pre-action hooks?
+      description: Links to the system's own documentation help a lot.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: For reports, the exact commands or configuration you used and what they returned.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you submit
+      options:
+        - label: I removed personal data, tokens and paths from everything above.
+          required: true

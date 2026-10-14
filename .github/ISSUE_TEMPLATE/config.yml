@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions, ideas and show and tell
+    url: https://github.com/GitDakky/twin-me-up/discussions
+    about: Ask a question, share how you use your twin or float an idea before building it.
+  - name: Report a security vulnerability
+    url: https://github.com/GitDakky/twin-me-up/security/advisories/new
+    about: Please report security issues privately, never in a public issue.

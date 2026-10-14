@@ -1,0 +1,25 @@
+name: Welcome
+
+# Greets first-time contributors. It never checks out or runs contributed code.
+on:
+  issues:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: read
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/first-interaction@1c4688942c71f71d4f5502a26ea67c331730fa4d # v3.1.0
+        with:
+          issue_message: |
+            Thanks for opening your first issue! A maintainer will triage it soon. For bugs, the output of `twinmeup doctor` helps a lot.
+          pr_message: |
+            Thanks for your first pull request! Please check that `./scripts/check.sh` passes and that the template is complete. Contributions are reviewed against the design commitments in CONTRIBUTING.md.

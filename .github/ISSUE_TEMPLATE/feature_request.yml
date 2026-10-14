@@ -1,0 +1,34 @@
+name: Feature request
+description: Suggest a new capability or an improvement.
+title: "feat: "
+labels: ["enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Twin Me Up makes six design commitments, listed in [CONTRIBUTING.md](https://github.com/GitDakky/twin-me-up/blob/main/CONTRIBUTING.md#principles). Ideas that would weaken them, such as inferring authority or modelling emotions, will be declined however useful they look.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Describe the situation you are in, not the solution yet.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives you considered
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Design commitments
+      options:
+        - label: This keeps learning ratified by the human and authority explicitly granted.
+          required: true
+        - label: I would like to help build this.

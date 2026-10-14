@@ -1,0 +1,40 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.GitDakky/twin-me-up",
+  "title": "Twin Me Up",
+  "description": "A personal work twin for every AI agent: your confirmed guidance and explicit grants, enforced.",
+  "repository": {
+    "url": "https://github.com/GitDakky/twin-me-up",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/GitDakky/twin-me-up",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "twin-me-up",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "named",
+          "name": "--actor",
+          "description": "Who is acting, as recorded in the twin's audit log, for example agent:vscode.",
+          "valueHint": "agent:<name>",
+          "isRequired": false
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "TWINMEUP_HOME",
+          "description": "Directory holding your twin. Defaults to ~/.twinmeup. Run `twinmeup init` there first.",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

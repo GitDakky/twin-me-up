@@ -1,0 +1,93 @@
+[project]
+name = "twin-me-up"
+version = "0.1.0"
+description = "A personal work twin for every AI agent: it learns how you decide, and agents act only within the authority you grant."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "GitDakky" }]
+maintainers = [{ name = "GitDakky" }]
+keywords = [
+    "ai-agents",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "digital-twin",
+    "agent-governance",
+    "human-in-the-loop",
+    "personal-ai",
+    "ai-safety",
+    "guardrails",
+    "claude-code",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "mcp>=2.3,<3",
+    "pydantic>=2.7,<3",
+    "typer>=0.12",
+]
+
+[project.urls]
+Homepage = "https://github.com/GitDakky/twin-me-up"
+Documentation = "https://github.com/GitDakky/twin-me-up#readme"
+Repository = "https://github.com/GitDakky/twin-me-up"
+Issues = "https://github.com/GitDakky/twin-me-up/issues"
+Changelog = "https://github.com/GitDakky/twin-me-up/blob/main/CHANGELOG.md"
+Releases = "https://github.com/GitDakky/twin-me-up/releases"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+
+[project.scripts]
+# `uvx twin-me-up` and MCP registry clients run the package's own name: the MCP server.
+twin-me-up = "twinmeup._entry:mcp"
+twinmeup = "twinmeup._entry:cli"
+twinmeup-mcp = "twinmeup._entry:mcp"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/twinmeup"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+mypy_path = "src"
+packages = ["twinmeup"]
+plugins = ["pydantic.mypy"]

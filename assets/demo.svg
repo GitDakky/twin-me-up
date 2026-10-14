@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 488" width="1000" height="488" role="img" aria-labelledby="demo-title demo-desc">
+  <title id="demo-title">Twin Me Up in action</title>
+  <desc id="demo-desc">Installing Twin Me Up, setting it up with a passphrase, connecting Claude Code, then an agent being briefed, asking before it sends an email, and being stopped from pushing code it was not authorised to push.</desc>
+  <defs>
+    <clipPath id="window"><rect width="1000" height="488" rx="14"/></clipPath>
+  </defs>
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace; font-size: 14px; fill: #e2e8f0; }
+    .p { fill: #5eead4; font-weight: 700; }
+    .u { fill: #ff8cc6; font-weight: 700; }
+    .b { fill: #c4b5fd; }
+    .t { fill: #7fb6ee; font-weight: 700; }
+    .a { fill: #fbbf24; font-weight: 700; }
+    .d { fill: #94a3b8; }
+    .k { fill: #ff8cc6; }
+    .g { fill: #e2e8f0; }
+    .dv { fill: #64748b; font-style: italic; font-size: 13px; }
+    .title { fill: #94a3b8; font-size: 13px; }
+    @keyframes l0 { 0%, 4.08% { opacity: 0 } 4.38%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l0 { animation: l0 22.05s linear infinite }
+    @keyframes c0 { 0%, 4.08% { transform: translateX(0); animation-timing-function: steps(26, end) } 7.85%, 100% { transform: translateX(240px) } }.c0 { animation: c0 22.05s linear infinite }
+    @keyframes l1 { 0%, 9.44% { opacity: 0 } 9.74%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l1 { animation: l1 22.05s linear infinite }
+    @keyframes l2 { 0%, 13.75% { opacity: 0 } 14.05%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l2 { animation: l2 22.05s linear infinite }
+    @keyframes c2 { 0%, 13.75% { transform: translateX(0); animation-timing-function: steps(13, end) } 16.02%, 100% { transform: translateX(128px) } }.c2 { animation: c2 22.05s linear infinite }
+    @keyframes l3 { 0%, 17.60% { opacity: 0 } 17.90%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l3 { animation: l3 22.05s linear infinite }
+    @keyframes l4 { 0%, 20.55% { opacity: 0 } 20.85%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l4 { animation: l4 22.05s linear infinite }
+    @keyframes l5 { 0%, 23.95% { opacity: 0 } 24.25%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l5 { animation: l5 22.05s linear infinite }
+    @keyframes l6 { 0%, 28.26% { opacity: 0 } 28.56%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l6 { animation: l6 22.05s linear infinite }
+    @keyframes c6 { 0%, 28.26% { transform: translateX(0); animation-timing-function: steps(80, end) } 39.87%, 100% { transform: translateX(704px) } }.c6 { animation: c6 22.05s linear infinite }
+    @keyframes l7 { 0%, 44.40% { opacity: 0 } 44.70%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l7 { animation: l7 22.05s linear infinite }
+    @keyframes l8 { 0%, 46.22% { opacity: 0 } 46.52%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l8 { animation: l8 22.05s linear infinite }
+    @keyframes c8 { 0%, 46.22% { transform: translateX(0); animation-timing-function: steps(55, end) } 54.20%, 100% { transform: translateX(489px) } }.c8 { animation: c8 22.05s linear infinite }
+    @keyframes l9 { 0%, 57.83% { opacity: 0 } 58.13%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l9 { animation: l9 22.05s linear infinite }
+    @keyframes l10 { 0%, 59.64% { opacity: 0 } 59.94%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l10 { animation: l10 22.05s linear infinite }
+    @keyframes l11 { 0%, 61.45% { opacity: 0 } 61.75%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l11 { animation: l11 22.05s linear infinite }
+    @keyframes l12 { 0%, 66.22% { opacity: 0 } 66.52%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l12 { animation: l12 22.05s linear infinite }
+    @keyframes l13 { 0%, 68.03% { opacity: 0 } 68.33%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l13 { animation: l13 22.05s linear infinite }
+    @keyframes l14 { 0%, 72.34% { opacity: 0 } 72.64%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l14 { animation: l14 22.05s linear infinite }
+    @keyframes l15 { 0%, 77.55% { opacity: 0 } 77.85%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l15 { animation: l15 22.05s linear infinite }
+    @keyframes l16 { 0%, 79.37% { opacity: 0 } 79.67%, 96.5% { opacity: 1 } 100% { opacity: 0 } }.l16 { animation: l16 22.05s linear infinite }
+    @media (prefers-reduced-motion: reduce) {
+      .ln { animation: none !important; opacity: 1 !important; }
+      .cv { display: none; }
+    }
+  </style>
+  <g clip-path="url(#window)">
+    <rect width="1000" height="488" fill="#0b1020"/>
+    <rect width="1000" height="38" fill="#141b33"/>
+    <circle cx="24" cy="19" r="6" fill="#ff5f57"/>
+    <circle cx="44" cy="19" r="6" fill="#febc2e"/>
+    <circle cx="64" cy="19" r="6" fill="#28c840"/>
+    <text x="500" y="24" text-anchor="middle" class="title">twin-me-up</text>
+    <text x="28" y="70" class="ln l0 " xml:space="preserve"><tspan class="p">$ </tspan>uv tool install twin-me-up</text>
+    <rect class="cv c0" x="44" y="53" width="240" height="22" fill="#0b1020"/>
+    <text x="28" y="94" class="ln l1 d" xml:space="preserve">Installed 3 executables: twin-me-up, twinmeup, twinmeup-mcp</text>
+    <text x="28" y="118" class="ln l2 " xml:space="preserve"><tspan class="p">$ </tspan>twinmeup init</text>
+    <rect class="cv c2" x="44" y="101" width="128" height="22" fill="#0b1020"/>
+    <text x="28" y="142" class="ln l3 " xml:space="preserve">Your name, as agents should refer to you: Alex</text>
+    <text x="28" y="166" class="ln l4 " xml:space="preserve">Choose a passphrase (8+ characters):</text>
+    <text x="28" y="190" class="ln l5 " xml:space="preserve">Repeat it:</text>
+    <text x="28" y="214" class="ln l6 " xml:space="preserve"><tspan class="p">$ </tspan>claude mcp add --scope user twin-me-up -- twinmeup-mcp --actor agent:claude-code</text>
+    <rect class="cv c6" x="44" y="197" width="704" height="22" fill="#0b1020"/>
+    <g class="ln l7"><text x="28" y="238" class="dv">later, inside your agent</text><line x1="220" y1="234" x2="972" y2="234" stroke="#2a3560" stroke-width="1"/></g>
+    <text x="28" y="262" class="ln l8 " xml:space="preserve"><tspan class="u">&gt; </tspan>Reply to the three roofing quotes and email the winner.</text>
+    <rect class="cv c8" x="44" y="245" width="489" height="22" fill="#0b1020"/>
+    <text x="28" y="286" class="ln l9 " xml:space="preserve"><tspan class="b">● </tspan><tspan class="t">twin_brief</tspan>(workflow: &quot;quote-review&quot;)</text>
+    <text x="28" y="310" class="ln l10 d" xml:space="preserve"><tspan class="d">  └ </tspan>You are acting as a delegate of Alex in the &#x27;quote-review&#x27; workflow.</text>
+    <text x="28" y="334" class="ln l11 d" xml:space="preserve"><tspan class="d">  └ </tspan>HARD LIMITS: Never instruct a contractor without my written approval.</text>
+    <text x="28" y="358" class="ln l12 " xml:space="preserve"><tspan class="b">● </tspan><tspan class="t">twin_authorise</tspan>(workflow: &quot;quote-review&quot;, action: &quot;email.send&quot;)</text>
+    <text x="28" y="382" class="ln l13 " xml:space="preserve"><tspan class="d">  └ </tspan><tspan class="a">ask:</tspan> Not granted. Prepare the work as a draft and ask the principal to approve.</text>
+    <text x="28" y="406" class="ln l14 g" xml:space="preserve"><tspan class="b">● </tspan>Draft ready. Sending it needs your approval. Shall I send it?</text>
+    <text x="28" y="430" class="ln l15 " xml:space="preserve"><tspan class="b">● </tspan><tspan class="t">Bash</tspan>(git push origin main)</text>
+    <text x="28" y="454" class="ln l16 k" xml:space="preserve"><tspan class="d">  └ </tspan>Twin Me Up: &#x27;repo.push&#x27; is not granted in the &#x27;general&#x27; workflow. Alex must approve this action.</text>
+  </g>
+  <rect x="0.5" y="0.5" width="999" height="487" rx="14" fill="none" stroke="#26305a"/>
+</svg>

@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.11", "3.12", "3.13"]
+        include:
+          - os: macos-latest
+            python: "3.12"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install
+        run: python -m pip install --upgrade pip && python -m pip install -e '.[dev]'
+      - name: Lint, format, types, tests and docs in sync
+        env:
+          PYTHON: python
+        run: ./scripts/check.sh
+      - name: Installed commands work end to end
+        env:
+          TWINMEUP_HOME: ${{ runner.temp }}/twin
+        run: |
+          echo 'a passphrase for ci' | twinmeup --passphrase-stdin init --name "CI Example"
+          twinmeup doctor
+          twinmeup connect --list
+          twin-me-up --health-check < /dev/null
+      - name: No stores or exports committed
+        run: |
+          if git ls-files | grep -E '\.(db|db-wal|db-shm|sqlite3?)$|bundle\.json$|^pilot-data/'; then
+            echo "Twin stores or exports are tracked. Remove them." && exit 1
+          fi
+
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build and check metadata
+        run: |
+          python -m pip install --upgrade build twine
+          python -m build
+          python -m twine check --strict dist/*
+      - name: Wheel ships the licence, notice, skill and pi extension
+        run: |
+          python -m zipfile -l dist/*.whl | tee files.txt
+          for f in licenses/LICENSE licenses/NOTICE twinmeup/py.typed \
+                   twinmeup/assets/skill/SKILL.md twinmeup/assets/pi/index.ts twinmeup/assets/pi/package.json; do
+            grep -q "$f" files.txt || { echo "missing from wheel: $f"; exit 1; }
+          done
+      - name: Fresh install from the wheel
+        env:
+          TWINMEUP_HOME: ${{ runner.temp }}/twin
+        run: |
+          python -m venv /tmp/fresh && /tmp/fresh/bin/pip install dist/*.whl
+          echo 'a passphrase for ci' | /tmp/fresh/bin/twinmeup --passphrase-stdin init --name "CI Example"
+          /tmp/fresh/bin/twinmeup doctor
+          /tmp/fresh/bin/twin-me-up --health-check < /dev/null

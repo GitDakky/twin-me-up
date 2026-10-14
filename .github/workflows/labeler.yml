@@ -1,0 +1,19 @@
+name: Label pull requests
+
+# pull_request_target lets this label pull requests from forks. It never checks out or runs
+# the pull request's code, so it is safe.
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/labeler@bf12e9b00b37c5c0ca2b87b79b2daf7891dbda13 # v7.0.0

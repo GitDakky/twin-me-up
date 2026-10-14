@@ -1,0 +1,11 @@
+{
+  "situation": "Two complete quotes for gutter replacement. The cheaper contractor cannot provide a current insurance certificate.",
+  "options": [
+    {"id": "cheaper", "label": "Appoint the cheaper contractor"},
+    {"id": "insured", "label": "Appoint the insured contractor"}
+  ],
+  "chosen": "insured",
+  "acceptable": [],
+  "expect_escalation": false,
+  "rationale": "Uninsured work on a let building is never acceptable."
+}

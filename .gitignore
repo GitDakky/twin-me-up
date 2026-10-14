@@ -1,0 +1,33 @@
+# Python and tooling
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Twin stores hold personal professional data. Never commit them.
+.twinmeup/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+pilot-data/
+exports/
+*.bundle.json
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+.DS_Store
+
+# Integration dependencies
+node_modules/

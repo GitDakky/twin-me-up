@@ -1,0 +1,20 @@
+documentation:
+  - changed-files:
+      - any-glob-to-any-file: ["docs/**", "*.md", "assets/**"]
+ci:
+  - changed-files:
+      - any-glob-to-any-file: [".github/**", "scripts/check.sh"]
+tests:
+  - changed-files:
+      - any-glob-to-any-file: ["tests/**"]
+integration:
+  - changed-files:
+      - any-glob-to-any-file: ["src/twinmeup/connect.py", "src/twinmeup/assets/**", "scripts/interop/**"]
+"area: security":
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/twinmeup/identity.py"
+          - "src/twinmeup/hooks.py"
+          - "src/twinmeup/store.py"
+          - "src/twinmeup/_entry.py"
+          - ".github/workflows/**"

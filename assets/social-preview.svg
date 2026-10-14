@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <defs>
+    <linearGradient id="canvas" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#05080f"/>
+      <stop offset="1" stop-color="#120c2c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#canvas)"/>
+  <svg x="40" y="70" width="1200" height="400" viewBox="0 0 1200 400">
+  <title id="tmu-title">Twin Me Up</title>
+  <desc id="tmu-desc">A person and their twin connected by two arcs: learning flows to the twin, and questions flow back to the person. A personal work twin for every AI agent.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#060a18"/>
+      <stop offset="0.55" stop-color="#0d1533"/>
+      <stop offset="1" stop-color="#1b1142"/>
+    </linearGradient>
+    <linearGradient id="title" x1="0" y1="0" x2="1" y2="0.22">
+      <stop offset="0" stop-color="#7ef0dc"/>
+      <stop offset="0.35" stop-color="#7fb6ee"/>
+      <stop offset="0.65" stop-color="#ad8ffa"/>
+      <stop offset="1" stop-color="#ff8cc6"/>
+    </linearGradient>
+    <linearGradient id="twin" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5eead4"/>
+      <stop offset="1" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="fadeGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff"/>
+      <stop offset="0.7" stop-color="#fff"/>
+      <stop offset="1" stop-color="#000"/>
+    </linearGradient>
+    <mask id="fade" maskUnits="userSpaceOnUse" x="80" y="120" width="360" height="160">
+      <rect x="80" y="120" width="360" height="152" fill="url(#fadeGrad)"/>
+    </mask>
+    <radialGradient id="glowTeal" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#14b8a6" stop-opacity="0.36"/>
+      <stop offset="1" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowViolet" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#8b5cf6" stop-opacity="0.32"/>
+      <stop offset="1" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="28" height="28" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.1" fill="#94a3b8" fill-opacity="0.12"/>
+    </pattern>
+    <marker id="arrowTeal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M1,1.5 L9,5 L1,8.5 Z" fill="#5eead4"/>
+    </marker>
+    <marker id="arrowViolet" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+      <path d="M1,1.5 L9,5 L1,8.5 Z" fill="#d8ccff"/>
+    </marker>
+    <clipPath id="frame"><rect width="1200" height="400" rx="26"/></clipPath>
+    <clipPath id="titleClip">
+      <text x="466" y="190" font-size="96" font-weight="800" letter-spacing="-2.5" font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">Twin Me Up</text>
+    </clipPath>
+  </defs>
+
+  <style>
+    .glow { animation: pulse 7s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+    .glow.late { animation-delay: -3.5s; }
+    .twin { animation: breathe 4.5s ease-in-out infinite; }
+    .twin-line { stroke-dasharray: 7 7; animation: march 2.4s linear infinite; }
+    .flow { offset-rotate: 0deg; animation: travel 3.2s cubic-bezier(.45,.05,.55,.95) infinite; }
+    .learn { offset-path: path("M202,140 C232,82 286,82 314,134"); }
+    .ask { offset-path: path("M306,232 C292,292 250,294 236,252"); }
+    .d2 { animation-delay: -1.07s; }
+    .d3 { animation-delay: -2.13s; }
+    .sheen { animation: sweep 6s ease-in-out infinite; }
+    .star { animation: twinkle 5s ease-in-out infinite; }
+    .s2 { animation-delay: -1.3s; } .s3 { animation-delay: -2.6s; } .s4 { animation-delay: -3.9s; }
+    @keyframes pulse { 0%, 100% { opacity: .65; transform: scale(1); } 50% { opacity: 1; transform: scale(1.08); } }
+    @keyframes breathe { 0%, 100% { opacity: .8; } 50% { opacity: 1; } }
+    @keyframes march { to { stroke-dashoffset: -28; } }
+    @keyframes travel { 0% { offset-distance: 0%; opacity: 0; } 12% { opacity: 1; } 72% { opacity: 1; } 90%, 100% { offset-distance: 100%; opacity: 0; } }
+    @keyframes sweep { 0%, 35% { transform: translateX(-280px); } 75%, 100% { transform: translateX(760px); } }
+    @keyframes twinkle { 0%, 100% { opacity: .2; } 50% { opacity: .85; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } .flow { opacity: 0; } }
+  </style>
+
+  <g clip-path="url(#frame)">
+    <rect width="1200" height="400" fill="url(#bg)"/>
+    <rect width="1200" height="400" fill="url(#dots)"/>
+    <circle class="glow" cx="260" cy="200" r="230" fill="url(#glowTeal)"/>
+    <circle class="glow late" cx="1010" cy="110" r="300" fill="url(#glowViolet)"/>
+    <g fill="#e2e8f0">
+      <circle class="star" cx="44" cy="42" r="1.6"/>
+      <circle class="star s2" cx="118" cy="70" r="1.2"/>
+      <circle class="star s3" cx="430" cy="38" r="1.5"/>
+      <circle class="star s4" cx="612" cy="54" r="1.2"/>
+      <circle class="star" cx="822" cy="32" r="1.7"/>
+      <circle class="star s2" cx="1012" cy="58" r="1.3"/>
+      <circle class="star s3" cx="1158" cy="40" r="1.8"/>
+      <circle class="star s4" cx="1170" cy="150" r="1.2"/>
+      <circle class="star" cx="1166" cy="246" r="1.5"/>
+      <circle class="star s2" cx="1178" cy="356" r="1.3"/>
+      <circle class="star s3" cx="30" cy="252" r="1.4"/>
+      <circle class="star s4" cx="58" cy="364" r="1.7"/>
+      <circle class="star" cx="440" cy="376" r="1.2"/>
+      <circle class="star s2" cx="742" cy="380" r="1.5"/>
+    </g>
+
+    <!-- you -->
+    <g fill="#e2e8f0" mask="url(#fade)">
+      <circle cx="170" cy="168" r="36"/>
+      <path d="M108,272 C108,230 136,210 170,210 C204,210 232,230 232,272 Z"/>
+    </g>
+    <!-- your twin -->
+    <g class="twin" mask="url(#fade)">
+      <circle cx="350" cy="168" r="35" fill="url(#twin)" fill-opacity="0.14"/>
+      <path d="M288,272 C288,230 316,210 350,210 C384,210 412,230 412,272 Z" fill="url(#twin)" fill-opacity="0.14"/>
+      <circle class="twin-line" cx="350" cy="168" r="35" fill="none" stroke="url(#twin)" stroke-width="3"/>
+      <path class="twin-line" d="M288,272 C288,230 316,210 350,210 C384,210 412,230 412,272" fill="none" stroke="url(#twin)" stroke-width="3" stroke-linecap="round"/>
+    </g>
+
+    <!-- learning flows to the twin; questions flow back to you -->
+    <path d="M202,140 C232,82 286,82 314,134" fill="none" stroke="#5eead4" stroke-opacity="0.6" stroke-width="2" marker-end="url(#arrowTeal)"/>
+    <path d="M306,232 C292,292 250,294 236,252" fill="none" stroke="#d8ccff" stroke-opacity="0.55" stroke-width="2" marker-end="url(#arrowViolet)"/>
+    <circle fill-opacity="0.85" class="flow learn" r="4.5" fill="#5eead4"/>
+    <circle fill-opacity="0.85" class="flow learn d2" r="4.5" fill="#5eead4"/>
+    <circle fill-opacity="0.85" class="flow learn d3" r="4.5" fill="#5eead4"/>
+    <circle fill-opacity="0.85" class="flow ask" r="4.5" fill="#d8ccff"/>
+    <circle fill-opacity="0.85" class="flow ask d2" r="4.5" fill="#d8ccff"/>
+    <circle fill-opacity="0.85" class="flow ask d3" r="4.5" fill="#d8ccff"/>
+
+    <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif" text-anchor="middle">
+      <text x="260" y="72" font-size="14" font-weight="600" fill="#5eead4" letter-spacing="2.5">LEARNS</text>
+      <text x="270" y="316" font-size="14" font-weight="600" fill="#d8ccff" letter-spacing="2.5">ASKS</text>
+      <text x="170" y="350" font-size="17" fill="#a3aecb">you</text>
+      <text x="350" y="350" font-size="17" fill="#a3aecb">your twin</text>
+    </g>
+
+    <!-- wordmark -->
+    <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+      <text x="466" y="190" font-size="96" font-weight="800" letter-spacing="-2.5" fill="url(#title)">Twin Me Up</text>
+      <g clip-path="url(#titleClip)">
+        <rect class="sheen" x="466" y="90" width="180" height="120" fill="url(#sheen)" transform="skewX(-20)"/>
+      </g>
+      <text x="470" y="240" font-size="30" font-weight="600" fill="#e2e8f0">A personal work twin for every AI agent.</text>
+      <text x="470" y="276" font-size="19" fill="#a3aecb">It learns how you decide. Agents act only within the authority you grant.</text>
+      <g font-size="15" fill="#d5dceb">
+        <rect x="470" y="312" width="122" height="34" rx="17" fill="#94a3b8" fill-opacity="0.12" stroke="#94a3b8" stroke-opacity="0.4"/>
+        <text x="531" y="334" text-anchor="middle">MCP native</text>
+        <rect x="604" y="312" width="218" height="34" rx="17" fill="#94a3b8" fill-opacity="0.12" stroke="#94a3b8" stroke-opacity="0.4"/>
+        <text x="713" y="334" text-anchor="middle">Human-ratified learning</text>
+        <rect x="834" y="312" width="176" height="34" rx="17" fill="#94a3b8" fill-opacity="0.12" stroke="#94a3b8" stroke-opacity="0.4"/>
+        <text x="922" y="334" text-anchor="middle">Enforced authority</text>
+        <rect x="1022" y="312" width="118" height="34" rx="17" fill="#94a3b8" fill-opacity="0.12" stroke="#94a3b8" stroke-opacity="0.4"/>
+        <text x="1081" y="334" text-anchor="middle">Local-first</text>
+      </g>
+    </g>
+  </g>
+</svg>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <rect x="40" y="506" width="512" height="64" rx="14" fill="#0b1020" stroke="#2a3560"/>
+    <text x="66" y="548" font-size="27" fill="#5eead4" font-weight="700">$</text>
+    <text x="94" y="548" font-size="27" fill="#e2e8f0">uv tool install twin-me-up</text>
+  </g>
+  <g font-family="ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Helvetica, Arial, sans-serif">
+    <text x="1240" y="548" font-size="25" fill="#c3cbe3" text-anchor="end">github.com/GitDakky/twin-me-up</text>
+  </g>
+</svg>
