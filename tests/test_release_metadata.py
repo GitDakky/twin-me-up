@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 import twinmeup
+from twinmeup.protocol import TOOLS
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -32,6 +33,20 @@ def test_every_version_agrees() -> None:
     citation = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     assert re.search(rf'^version: "?{re.escape(version)}"?$', citation, re.MULTILINE)
     assert f"## [{version}]" in (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+
+
+def test_desktop_extension_bundle_matches_the_package() -> None:
+    version = _project()["version"]
+    manifest = json.loads((ROOT / "mcpb" / "manifest.json").read_text(encoding="utf-8"))
+    bundle_toml = (ROOT / "mcpb" / "pyproject.toml").read_text(encoding="utf-8")
+    bundle = tomllib.loads(bundle_toml)["project"]
+    assert manifest["version"] == bundle["version"] == version
+    assert bundle["dependencies"] == [f"{_project()['name']}=={version}"]
+    assert manifest["server"]["type"] == "uv"
+    assert (ROOT / "mcpb" / manifest["server"]["entry_point"]).is_file()
+    assert (ROOT / "mcpb" / manifest["icon"]).is_file()
+    assert manifest["license"] == _project()["license"]
+    assert {tool["name"] for tool in manifest["tools"]} == {tool.name for tool in TOOLS}
 
 
 def test_registry_ownership_marker_matches_the_server_name() -> None:

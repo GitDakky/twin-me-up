@@ -84,3 +84,7 @@ jobs:
           echo 'a passphrase for ci' | /tmp/fresh/bin/twinmeup --passphrase-stdin init --name "CI Example"
           /tmp/fresh/bin/twinmeup doctor
           /tmp/fresh/bin/twin-me-up --health-check < /dev/null
+      - name: Desktop extension bundle validates and packs
+        run: |
+          npx --yes @anthropic-ai/mcpb@2.1.2 validate mcpb/manifest.json
+          npx --yes @anthropic-ai/mcpb@2.1.2 pack mcpb "$RUNNER_TEMP/twin-me-up.mcpb"

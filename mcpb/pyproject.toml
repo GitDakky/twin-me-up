@@ -1,0 +1,9 @@
+# The desktop extension (MCPB) bundle. The host installs these dependencies with uv,
+# so one small bundle runs on macOS, Windows and Linux. Keep the pin equal to the
+# package version; tests/test_release_metadata.py checks it.
+[project]
+name = "twin-me-up-desktop-extension"
+version = "0.1.0"
+description = "Twin Me Up as a desktop extension (MCPB bundle)"
+requires-python = ">=3.11"
+dependencies = ["twin-me-up==0.1.0"]

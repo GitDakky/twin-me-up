@@ -92,6 +92,10 @@ given it, and those commands refuse to run without it.
 Only need the MCP server? After `twinmeup init`, any MCP client can start it with
 `uvx twin-me-up`. Prefer the latest code? `uv tool install git+https://github.com/GitDakky/twin-me-up`.
 
+Using Claude Desktop? After `twinmeup init`, download the `.mcpb` desktop extension from the
+[latest release](https://github.com/GitDakky/twin-me-up/releases/latest) and open it. One bundle
+works on macOS, Windows and Linux.
+
 ## Install with one prompt
 
 Already working inside an agent? Paste this into it.

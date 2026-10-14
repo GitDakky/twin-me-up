@@ -1,0 +1,96 @@
+{
+  "manifest_version": "0.4",
+  "name": "twin-me-up",
+  "display_name": "Twin Me Up",
+  "version": "0.1.0",
+  "description": "A personal work twin for every AI agent: your confirmed guidance and explicit grants, enforced.",
+  "long_description": "Twin Me Up gives every AI agent you use your confirmed guidance and your limits, and makes it ask before it acts.\n\n- **Briefs** the agent on the guidance you have confirmed, red lines included.\n- **Answers \"am I allowed to do this?\"** from explicit, expiring grants. Anything else returns ask.\n- **Learns from your corrections** as lessons that only you can confirm.\n\n**Before first use**, create your twin in a terminal: `uvx --from twin-me-up twinmeup init`. Teach it and review lessons with the `twinmeup` command; the passphrase you set there guards every human-only operation.\n\nLocal-first: your twin lives in `~/.twinmeup` on this machine. No telemetry.",
+  "author": {
+    "name": "GitDakky",
+    "url": "https://github.com/GitDakky"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GitDakky/twin-me-up.git"
+  },
+  "homepage": "https://github.com/GitDakky/twin-me-up",
+  "documentation": "https://github.com/GitDakky/twin-me-up#readme",
+  "support": "https://github.com/GitDakky/twin-me-up/issues",
+  "icon": "icon.png",
+  "server": {
+    "type": "uv",
+    "entry_point": "src/server.py",
+    "mcp_config": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${__dirname}",
+        "src/server.py",
+        "--actor",
+        "agent:desktop-extension"
+      ]
+    }
+  },
+  "tools": [
+    {
+      "name": "twin_brief",
+      "description": "Your confirmed guidance and current authority for a workflow. Call it at the start of work."
+    },
+    {
+      "name": "twin_authorise",
+      "description": "May I do this now? Returns allow with the covering grant, or ask."
+    },
+    {
+      "name": "twin_search",
+      "description": "Find confirmed guidance relevant to a question."
+    },
+    {
+      "name": "twin_review_queue",
+      "description": "Unconfirmed lessons to show you for review."
+    },
+    {
+      "name": "twin_track_record",
+      "description": "Evidence and stage for a workflow: learning, corrections, evaluations and grants."
+    },
+    {
+      "name": "twin_next_questions",
+      "description": "The most valuable unanswered questions about a recorded decision."
+    },
+    {
+      "name": "twin_record_decision",
+      "description": "Capture a real decision: situation, options, choice, reasons."
+    },
+    {
+      "name": "twin_amend_decision",
+      "description": "Merge your answers to follow-up questions into a recorded decision."
+    },
+    {
+      "name": "twin_record_correction",
+      "description": "Record when you edit, override or reject the agent's work."
+    },
+    {
+      "name": "twin_propose_lesson",
+      "description": "Propose a lesson. It has no authority until you confirm it."
+    }
+  ],
+  "keywords": [
+    "agent governance",
+    "human in the loop",
+    "guardrails",
+    "digital twin",
+    "memory",
+    "personal ai"
+  ],
+  "license": "Apache-2.0",
+  "compatibility": {
+    "platforms": [
+      "darwin",
+      "linux",
+      "win32"
+    ],
+    "runtimes": {
+      "python": ">=3.11"
+    }
+  }
+}

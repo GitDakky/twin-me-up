@@ -6,6 +6,12 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- A desktop extension bundle (`.mcpb`) for Claude Desktop, Smithery and other MCPB hosts. It
+  uses the uv runtime, so one bundle works on every platform, and each release builds and
+  attaches it.
+
 ## [0.1.0] - 2026-10-14
 
 First public release, under the Apache License 2.0.
