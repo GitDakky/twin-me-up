@@ -6,6 +6,14 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-10-15
+
+### Fixed
+
+- `twin-me-up` now runs commands as well: `twin-me-up doctor` works exactly like
+  `twinmeup doctor`. Without a command it still starts the MCP server, so agent hosts launch it
+  as before.
+
 ## [0.2.0] - 2026-10-14
 
 ### Added

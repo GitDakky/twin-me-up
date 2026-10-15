@@ -3,7 +3,7 @@
 # package version; tests/test_release_metadata.py checks it.
 [project]
 name = "twin-me-up-desktop-extension"
-version = "0.2.0"
+version = "0.2.1"
 description = "Twin Me Up as a desktop extension (MCPB bundle)"
 requires-python = ">=3.11"
-dependencies = ["twin-me-up==0.2.0"]
+dependencies = ["twin-me-up==0.2.1"]

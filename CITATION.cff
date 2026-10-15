@@ -9,8 +9,8 @@ authors:
 repository-code: "https://github.com/GitDakky/twin-me-up"
 url: "https://github.com/GitDakky/twin-me-up"
 license: Apache-2.0
-version: "0.2.0"
-date-released: "2026-10-14"
+version: "0.2.1"
+date-released: "2026-10-15"
 keywords:
   - ai-agents
   - model-context-protocol

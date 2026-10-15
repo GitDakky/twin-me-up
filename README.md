@@ -438,7 +438,7 @@ trusted on feel. The full review, with every source and the regulatory lines it 
 | `twinmeup audit verify, log` | The tamper-evident audit log |
 | `twinmeup export` | Portable bundle (human only) |
 | `twinmeup erase episode` | Erasure with derived records (human only) |
-| `twin-me-up` | The MCP server, under the package's own name, for `uvx twin-me-up` |
+| `twin-me-up` | The MCP server for `uvx twin-me-up`. Given a command, the same as `twinmeup` |
 
 Every command has `--help`. Global options: `--home`, `--actor`, `--principal` and
 `--passphrase-stdin` (for scripts you run yourself).

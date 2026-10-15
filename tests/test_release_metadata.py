@@ -58,8 +58,11 @@ def test_registry_ownership_marker_matches_the_server_name() -> None:
 
 
 def test_uvx_runs_the_mcp_server() -> None:
+    # `uvx twin-me-up` and registry clients run the package's own name: the MCP server, which
+    # also runs any twinmeup command it is given, such as `twin-me-up doctor`.
     scripts = _project()["scripts"]
-    assert scripts[_project()["name"]] == scripts["twinmeup-mcp"]
+    assert scripts[_project()["name"]] == "twinmeup._entry:twin_me_up"
+    assert scripts["twinmeup-mcp"] == "twinmeup._entry:mcp"
 
 
 def test_licence_and_notice_ship_with_the_package() -> None:
