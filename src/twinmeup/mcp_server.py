@@ -95,7 +95,10 @@ def build_server(service: TwinService, actor: str, principal: str) -> Server[Any
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="twinmeup-mcp", description="Serve the twin-me-up protocol over MCP stdio."
+        prog="twinmeup-mcp",
+        description="Serve the twin-me-up protocol over MCP stdio.",
+        epilog="For commands such as doctor, run `twinmeup <command>`. "
+        "`twin-me-up <command>` works too.",
     )
     parser.add_argument("--home", default=os.environ.get("TWINMEUP_HOME"), help="Store directory.")
     parser.add_argument(

@@ -1,6 +1,6 @@
 [project]
 name = "twin-me-up"
-version = "0.2.0"
+version = "0.2.1"
 description = "A personal work twin for every AI agent: it learns how you decide, and agents act only within the authority you grant."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -59,7 +59,8 @@ dev = [
 
 [project.scripts]
 # `uvx twin-me-up` and MCP registry clients run the package's own name: the MCP server.
-twin-me-up = "twinmeup._entry:mcp"
+# Given a command, such as `twin-me-up doctor`, it runs that twinmeup command instead.
+twin-me-up = "twinmeup._entry:twin_me_up"
 twinmeup = "twinmeup._entry:cli"
 twinmeup-mcp = "twinmeup._entry:mcp"
 

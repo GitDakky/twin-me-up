@@ -37,3 +37,38 @@ def mcp() -> None:
     from .mcp_server import main
 
     raise SystemExit(main())
+
+
+# The MCP server's options that take a value. Everything else it accepts is a flag.
+_SERVER_VALUE_OPTIONS = frozenset({"--home", "--actor", "--principal"})
+
+
+def wants_cli(args: list[str]) -> bool:
+    """True when the arguments name a command, as in `twin-me-up doctor`.
+
+    The MCP server takes options only, so any other word can only be a twinmeup command.
+    """
+    takes_value = False
+    for arg in args:
+        if takes_value:
+            takes_value = False
+        elif arg in _SERVER_VALUE_OPTIONS:
+            takes_value = True
+        elif not arg.startswith("-"):
+            return True
+    return False
+
+
+def twin_me_up() -> None:
+    """`twin-me-up`, the package's own name: the MCP server, and every twinmeup command.
+
+    With a command, such as `twin-me-up doctor`, it behaves exactly like `twinmeup`. Without
+    one it starts the MCP server, so `uvx twin-me-up` and agent hosts launch it as before.
+    """
+    if not wants_cli(sys.argv[1:]):
+        mcp()
+        return
+    _isolate("twinmeup.cli")
+    from .cli import app
+
+    app(prog_name="twin-me-up")

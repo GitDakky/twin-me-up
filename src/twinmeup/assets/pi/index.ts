@@ -72,7 +72,7 @@ function parameters(schema: any): any {
 }
 
 export default async function (pi: ExtensionAPI) {
-  const client = new Client({ name: "pi-twin-me-up", version: "0.2.0" });
+  const client = new Client({ name: "pi-twin-me-up", version: "0.2.1" });
   await client.connect(
     new StdioClientTransport({
       command: COMMAND,

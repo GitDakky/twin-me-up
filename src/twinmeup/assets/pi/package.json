@@ -1,6 +1,6 @@
 {
   "name": "pi-twin-me-up",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Twin Me Up protocol for the pi coding agent: tools, operating brief and authority enforcement.",
   "type": "module",

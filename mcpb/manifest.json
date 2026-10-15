@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "twin-me-up",
   "display_name": "Twin Me Up",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A personal work twin for every AI agent: your confirmed guidance and explicit grants, enforced.",
   "long_description": "Twin Me Up gives every AI agent you use your confirmed guidance and your limits, and makes it ask before it acts.\n\n- **Briefs** the agent on the guidance you have confirmed, red lines included.\n- **Answers \"am I allowed to do this?\"** from explicit, expiring grants. Anything else returns ask.\n- **Learns from your corrections** as lessons that only you can confirm.\n\n**Before first use**, create your twin in a terminal: `uvx --from twin-me-up twinmeup init`. Teach it and review lessons with the `twinmeup` command; the passphrase you set there guards every human-only operation.\n\nLocal-first: your twin lives in `~/.twinmeup` on this machine. No telemetry.",
   "author": {
