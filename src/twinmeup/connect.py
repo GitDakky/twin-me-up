@@ -45,10 +45,12 @@ HOOK_TOOLS: dict[str, dict[str, str]] = {
 }
 
 # Human-only subcommands, matched outside quoted text so JSON payloads never trigger them.
+# `twin-me-up` runs the same commands as `twinmeup`, so both names are guarded.
 _HUMAN_ONLY = (
-    r"twinmeup\b[^'\"\n]*?\s(init|export|erase|grant\s+(add|revoke)|"
+    r"(?:twinmeup|twin-me-up)\b[^'\"\n]*?\s(init|export|erase|grant\s+(add|revoke)|"
+    r"approvals\s+(approve|decline)|"
     r"lesson\s+(confirm|reject|revise|retire)|eval\s+(create|add-case|from-episode|freeze))\b"
-    r"|twinmeup\b[^'\"\n]*?\s--(confirm|passphrase-stdin)\b"
+    r"|(?:twinmeup|twin-me-up)\b[^'\"\n]*?\s--(confirm|passphrase-stdin)\b"
 )
 _STORE = r"\.twinmeup\b"
 # Where each host registers its hooks. Guarding these stops an agent disabling enforcement.
@@ -167,6 +169,33 @@ Extension (tools, the brief at session start, and enforcement):
    Ungranted actions then ask you to approve once, or are blocked when there is no UI.
 Skill only (no extension): {cli} skill export ~/.pi/agent/skills
    The agent then uses the `{cli} tools call` bridge through bash."""
+
+
+def _pi_durable(mcp: str, cli: str, actor: str) -> str:
+    return f"""\
+Extension for your own Pi Durable harness (experimental, tested with
+@earendil-works/pi-durable 1.2.0): the twin's tools, the brief as a system prompt section,
+and enforcement that holds through crashes and restarts. It talks to the twin through the
+CLI, so this harness does not need the MCP server ({mcp}).
+1. {cli} extension export pi-durable <your project>
+2. In your project: npm install @earendil-works/pi-durable @earendil-works/pi-ai
+3. Install it in your harness (TypeScript: the live test ran it with Node's
+   --experimental-strip-types):
+     import {{ createTwinMeUp }} from "./twin-me-up-durable/index.ts";
+     registry.install(createTwinMeUp({{
+       command: "{cli}",
+       actor: "{actor}",
+       workflow: "general",                    // the brief, in the system prompt
+       actionMap: `${{process.env.HOME}}/.twinmeup/action-map.json`,
+       approvalWaitMs: 15 * 60_000,            // optional: ask the principal and wait
+     }}));
+4. Build the action map. If your harness uses pi's coding tools (bash, write, edit):
+     {cli} action-map example --host pi > ~/.twinmeup/action-map.json
+   Otherwise write rules for your own tool names, and test them with `{cli} action-map check`.
+   Ungranted calls are blocked. With approvalWaitMs the hook requests approval and waits,
+   through restarts: decide with `twinmeup approvals list`, then `approve` or `decline`.
+   Keep the extension and the map where your agents cannot write, or add rules that guard
+   them."""
 
 
 def _claude(mcp: str, cli: str, actor: str) -> str:
@@ -346,6 +375,7 @@ HOSTS: dict[str, Host] = {
     for h in (
         Host("hermes", "Hermes Agent", "host", _hermes),
         Host("pi", "pi coding agent", "host", _pi),
+        Host("pi-durable", "Pi Durable (experimental)", "framework", _pi_durable),
         Host("claude-code", "Claude Code", "host", _claude),
         Host("codex", "OpenAI Codex CLI", "host", _codex),
         Host("gemini", "Gemini CLI", "host", _gemini),

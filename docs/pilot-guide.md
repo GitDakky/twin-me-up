@@ -52,6 +52,9 @@ done
 ## Weeks 5 and 6: hand off
 
 - Use `twinmeup handoff` to brief a colleague or a second agent on new cases.
+- Before granting standing authority, let agents request approval for each consequential
+  action. Each approval covers one action and each decision is recorded, so your twin learns
+  where your lines are. `twinmeup approvals list` shows what is waiting.
 - Measure whether the receiving person or agent produces better work with the handoff than
   without it. Test some cases without the twin as well: assistance that helps in the moment can
   leave people worse off once it is removed.

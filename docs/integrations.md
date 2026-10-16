@@ -11,6 +11,7 @@ did what. Use any `agent:` name you like with `twinmeup --actor agent:<name> con
 |---|---|---|
 | Hermes Agent | `hermes` | host |
 | pi coding agent | `pi` | host |
+| Pi Durable (experimental) | `pi-durable` | framework |
 | Claude Code | `claude-code` | host |
 | OpenAI Codex CLI | `codex` | host |
 | Gemini CLI | `gemini` | host |
@@ -62,6 +63,34 @@ Extension (tools, the brief at session start, and enforcement):
    Ungranted actions then ask you to approve once, or are blocked when there is no UI.
 Skill only (no extension): twinmeup skill export ~/.pi/agent/skills
    The agent then uses the `twinmeup tools call` bridge through bash.
+```
+
+## Connect Twin Me Up to Pi Durable (experimental)
+
+```text
+Extension for your own Pi Durable harness (experimental, tested with
+@earendil-works/pi-durable 1.2.0): the twin's tools, the brief as a system prompt section,
+and enforcement that holds through crashes and restarts. It talks to the twin through the
+CLI, so this harness does not need the MCP server (twinmeup-mcp).
+1. twinmeup extension export pi-durable <your project>
+2. In your project: npm install @earendil-works/pi-durable @earendil-works/pi-ai
+3. Install it in your harness (TypeScript: the live test ran it with Node's
+   --experimental-strip-types):
+     import { createTwinMeUp } from "./twin-me-up-durable/index.ts";
+     registry.install(createTwinMeUp({
+       command: "twinmeup",
+       actor: "agent:pi-durable",
+       workflow: "general",                    // the brief, in the system prompt
+       actionMap: `${process.env.HOME}/.twinmeup/action-map.json`,
+       approvalWaitMs: 15 * 60_000,            // optional: ask the principal and wait
+     }));
+4. Build the action map. If your harness uses pi's coding tools (bash, write, edit):
+     twinmeup action-map example --host pi > ~/.twinmeup/action-map.json
+   Otherwise write rules for your own tool names, and test them with `twinmeup action-map check`.
+   Ungranted calls are blocked. With approvalWaitMs the hook requests approval and waits,
+   through restarts: decide with `twinmeup approvals list`, then `approve` or `decline`.
+   Keep the extension and the map where your agents cannot write, or add rules that guard
+   them.
 ```
 
 ## Connect Twin Me Up to Claude Code

@@ -51,8 +51,9 @@ merged.
 3. Fill in the pull request template, including how you verified the change.
 4. CI must pass: tests on Linux with Python 3.11 to 3.13 and on macOS, packaging checks, CodeQL
    and dependency review.
-5. A maintainer reviews every change. `main` accepts reviewed pull requests through squash
-   merges only.
+5. A maintainer reviews every change. Everything reaches `main` through a pull request,
+   maintainers' own changes included, and only once the required checks pass. Merges are
+   squash merges.
 
 Write commit subjects in the imperative ("Add a Goose hook dialect") and use the body to
 explain why. AI-assisted contributions are welcome: say which tool you used and review the
@@ -71,17 +72,23 @@ where answers help everyone.
 2. If the system supports pre-action hooks, add its tool names to `HOOK_TOOLS`, the file that
    registers its hooks to `_HOST_CONFIG`, and a dialect in `src/twinmeup/hooks.py`.
 3. Regenerate the integration docs: `python scripts/gen_integrations_doc.py`.
-4. Verify it for real and say how in the pull request: the command you ran and what it
+4. If it needs a native extension, ship it under `src/twinmeup/assets/` and export it with
+   `twinmeup extension export`, as pi and Pi Durable do. Its enforcement must fail closed.
+5. Verify it for real and say how in the pull request: the command you ran and what it
    returned. Update the table in the README.
 
 ## Releases
 
-Maintainers set the new version in `pyproject.toml`, `src/twinmeup/__init__.py`,
-`server.json` and `CITATION.cff`, move the "Unreleased" notes in `CHANGELOG.md` under the new
-version, then publish a GitHub release tagged `vX.Y.Z`. The release workflow tests and builds
-the package, attaches it to the release, publishes it to PyPI through trusted publishing once a
-maintainer approves, and updates the MCP Registry listing. `tests/test_release_metadata.py`
-fails if the versions drift apart.
+In a pull request, maintainers set the new version in `pyproject.toml`,
+`src/twinmeup/__init__.py`, `server.json` (twice), `CITATION.cff` (with `date-released`),
+`mcpb/manifest.json`, `mcpb/pyproject.toml` (its version and the pinned `twin-me-up`), the
+`package.json` of both extensions under `src/twinmeup/assets/`, and the client version in
+`assets/pi/index.ts`. They move the "Unreleased" notes in `CHANGELOG.md` under the new
+version and, once the pull request is merged, publish a GitHub release tagged `vX.Y.Z`. The
+release workflow tests and builds the package, attaches it and the desktop bundle to the
+release, publishes to PyPI through trusted publishing once a maintainer approves, and updates
+the MCP Registry listing. `tests/test_release_metadata.py` fails if any of these versions
+drift apart.
 
 ## Licence of contributions
 

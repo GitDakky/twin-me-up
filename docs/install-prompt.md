@@ -45,10 +45,12 @@ Work step by step and show me each command you run.
 While you work with my twin:
 - Call twin_brief at the start of a piece of work.
 - Call twin_authorise before anything consequential: sending, paying, publishing, deleting or
-  committing on my behalf. If the answer is "ask", stop and ask me.
+  committing on my behalf. If the answer is "ask", prepare a draft, request my approval with
+  twin_request_approval, and act only once twin_approval_status says it is approved.
+- Give every write a request_id, so a retry never records anything twice.
 - When I correct you, record it with twin_record_correction.
-- Never try to confirm lessons, grant authority, export or erase. Those are mine, and the twin
-  will refuse you anyway.
+- Never try to confirm lessons, approve requests, grant authority, export or erase. Those are
+  mine, and the twin will refuse you anyway.
 ```
 
 ## Agents without a shell
