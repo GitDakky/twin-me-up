@@ -92,6 +92,9 @@ given it, and those commands refuse to run without it.
 Only need the MCP server? After `twinmeup init`, any MCP client can start it with
 `uvx twin-me-up`. Prefer the latest code? `uv tool install git+https://github.com/GitDakky/twin-me-up`.
 
+Upgrading? Run `uv tool upgrade twin-me-up` (or `pipx upgrade twin-me-up`), then `twinmeup doctor`.
+The [FAQ](#faq) explains what an upgrade changes for your twin.
+
 Using Claude Desktop? After `twinmeup init`, download the `.mcpb` desktop extension from the
 [latest release](https://github.com/GitDakky/twin-me-up/releases/latest) and open it. One bundle
 works on macOS, Windows and Linux.
@@ -135,10 +138,12 @@ Work step by step and show me each command you run.
 While you work with my twin:
 - Call twin_brief at the start of a piece of work.
 - Call twin_authorise before anything consequential: sending, paying, publishing, deleting or
-  committing on my behalf. If the answer is "ask", stop and ask me.
+  committing on my behalf. If the answer is "ask", prepare a draft, request my approval with
+  twin_request_approval, and act only once twin_approval_status says it is approved.
+- Give every write a request_id, so a retry never records anything twice.
 - When I correct you, record it with twin_record_correction.
-- Never try to confirm lessons, grant authority, export or erase. Those are mine, and the twin
-  will refuse you anyway.
+- Never try to confirm lessons, approve requests, grant authority, export or erase. Those are
+  mine, and the twin will refuse you anyway.
 ```
 
 </details>
@@ -155,9 +160,9 @@ flowchart LR
     twin[("Your twin<br/>local store")]
     agent["Any agent"]
     hook{{"Pre-action hook"}}
-    you -- "confirm lessons<br/>grant authority" --> twin
+    you -- "confirm lessons<br/>grant and approve" --> twin
     twin -- "candidate lessons<br/>to review" --> you
-    agent -- "twin_brief<br/>twin_authorise" --> twin
+    agent -- "twin_brief<br/>twin_authorise<br/>request approval" --> twin
     agent -- "record decisions<br/>and corrections" --> twin
     agent -. "every governed tool call" .-> hook
     hook -- "ungranted: block or ask" --> agent
@@ -170,8 +175,8 @@ flowchart LR
    guidance for the workflow, with boundaries and escalation rules always included, and a list
    of what it is authorised to do.
 2. **Check.** Before anything consequential it calls `twin_authorise`. The answer is `allow`
-   only when a live grant covers the action. Otherwise it is `ask`, and the agent stops to ask
-   you.
+   only when a live grant covers the action. Otherwise it is `ask`: the agent prepares a draft,
+   requests your approval and waits for your decision.
 3. **Learn.** When you make a decision or correct the agent, it records the decision or the
    correction and proposes lessons from it.
 4. **Ratify.** You review the queue and confirm, revise or reject each lesson. Only confirmed
@@ -344,6 +349,10 @@ needs an explicit grant from you.
   from a real terminal.
 - **Reserved actions.** Anything under `twin.` can never be granted, so no grant can hand an
   agent control of the twin itself.
+- **Approvals cover one action, once.** Only you can approve or decline, with your passphrase.
+  An approval grants exactly the action requested, for one use and an hour unless you say
+  otherwise. Where a hook enforces, every tool call is a new attempt, so an id a host reuses
+  cannot ride on a spent approval.
 - **Enforcement fails closed.** If a hook cannot reach a decision, the tool call is blocked.
   The example action maps also stop agents running human-only commands, writing to the twin's
   store or editing the host configuration that registers the hook.
@@ -419,6 +428,7 @@ trusted on feel. The full review, with every source and the regulatory lines it 
 |---|---|
 | `twinmeup init` | Set up your twin: your name and your passphrase |
 | `twinmeup doctor` | Check settings, passphrase, store, audit chain and a live MCP handshake |
+| `twinmeup version` | The installed version |
 | `twinmeup status` | Record counts and audit-chain health |
 | `twinmeup connect <system>` | Exact steps to connect an agent system (`--list` for all) |
 | `twinmeup brief` | The operating instructions an agent embeds in its prompt |
@@ -466,8 +476,8 @@ emotions.
 <summary><b>What if an agent ignores the twin?</b></summary>
 
 Without hooks the twin is advisory: well-behaved agents follow the skill, but nothing forces
-them. With hooks (Hermes, Claude Code, pi), governed tool calls are checked outside the model,
-and ungranted ones are blocked or escalated to you.
+them. With hooks (Hermes, Claude Code and pi) or the Pi Durable extension, governed tool calls
+are checked outside the model, and ungranted ones are blocked or wait for your approval.
 </details>
 
 <details>
@@ -477,6 +487,24 @@ Yes, as your own tool. If an organisation deploys twins for its staff, it needs 
 assessment of lawful basis, notices and retention, and clear rules on who owns and can revoke
 each twin. Consent is rarely a sound basis for workplace monitoring. See
 [docs/research.md](https://github.com/GitDakky/twin-me-up/blob/main/docs/research.md).
+</details>
+
+<details>
+<summary><b>Do I type <code>twinmeup</code> or <code>twin-me-up</code>?</b></summary>
+
+Either. `twinmeup` is the CLI. `twin-me-up` is the package's own name: given a command, such as
+`twin-me-up doctor`, it does the same as `twinmeup`. With no command it starts the MCP server,
+which is what agent hosts and `uvx twin-me-up` run.
+</details>
+
+<details>
+<summary><b>How do I upgrade?</b></summary>
+
+Run `uv tool upgrade twin-me-up`, or `pipx upgrade twin-me-up`. If uv says there is nothing to
+upgrade just after a release, it is reading a cached index: run `uv cache clean twin-me-up`
+and try again. A newer version moves your twin to its store format the first time it opens
+it, and older versions cannot open it after that. Check with `twinmeup version` and
+`twinmeup doctor`.
 </details>
 
 <details>
@@ -490,8 +518,9 @@ Give each person their own `TWINMEUP_HOME`. One twin belongs to one person.
 - Enforcement hooks for more hosts as their hook interfaces allow
 - Encryption at rest for the store
 - Signed bundles for moving a twin between machines
-- A small local review app for the lesson queue
+- A small local review app for lessons and approvals
 - Verified guides for VS Code, Goose and Windows
+- The Pi Durable extension out of experimental, with a verified map for pi's coding tools
 
 Follow along, or pick something up, in [issues](https://github.com/GitDakky/twin-me-up/issues) and
 [discussions](https://github.com/GitDakky/twin-me-up/discussions).

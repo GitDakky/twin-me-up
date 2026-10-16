@@ -20,8 +20,11 @@ injected text, or try to be helpful in ways the person did not want.
 | An agent sets up a twin before the principal does | `twinmeup init` refuses agent actors, and an unprotected twin can only be chosen from a real terminal. |
 | A grant hands over control of the twin itself | Actions in the reserved `twin.` namespace can never be granted. |
 | An agent acts without asking | `twin_authorise` returns `ask` for anything not covered by a live, scoped grant. Optional hooks enforce this outside the model. |
+| An agent approves its own request | Approving and declining are human-only: they need the principal's passphrase, read from a terminal. Agents can request approval and read its status, nothing more. |
+| One approval is stretched to cover more | An approval grants exactly the action requested, for one use and an hour by default. Enforcement spends it on the call that acts. Every hook run is a new attempt, and the Pi Durable extension keeps its attempt ids in durable memos, so ids a host reuses cannot ride on a spent approval. |
+| A retry records something twice | Write tools take a `request_id`. A retry with the same id returns the first result. |
 | A hook crashes or times out | Hooks fail closed: no decision means the call is blocked. |
-| An agent disables enforcement | The example action maps guard the twin's store, human-only commands and each host's own hook configuration. |
+| An agent disables enforcement | The example action maps guard the twin's store, human-only commands under either command name, and each host's own hook configuration. |
 | Records are altered after the fact | Every write is appended to a hash-chained audit log. `twinmeup audit verify` detects breaks. |
 | Exports leak | Bundles are written readable by the owner only. Held-out evaluation answers are sealed unless explicitly included. |
 | Another program loads the wrong libraries | The commands ignore a foreign `PYTHONPATH`, so a polluted environment cannot swap in different code. |
@@ -33,6 +36,8 @@ injected text, or try to be helpful in ways the person did not want.
   The passphrase and hooks stop agents using the twin's own interfaces to act as you; they are
   not a sandbox. For hard isolation, run agents as a different user or in a container.
 - **Agents that are not connected to hooks.** Without hooks the twin is advisory.
+- **Approvals given without reading them.** An approval covers what the request names. Read
+  the summary, and the draft where there is one, before you approve.
 - **Tool names the action map does not cover.** Review and extend the map for your tools. Use
   `twinmeup action-map check` to test it.
 - **Compromise of the model provider your agents use.** The twin never calls a model itself,

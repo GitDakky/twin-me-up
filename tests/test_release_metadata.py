@@ -72,3 +72,15 @@ def test_licence_and_notice_ship_with_the_package() -> None:
     licence = (ROOT / "LICENSE").read_text(encoding="utf-8")
     assert "Apache License" in licence and "Version 2.0, January 2004" in licence
     assert "GitDakky" in (ROOT / "NOTICE").read_text(encoding="utf-8")
+
+
+def test_the_extensions_match_the_package() -> None:
+    version = _project()["version"]
+    assets = ROOT / "src" / "twinmeup" / "assets"
+    for name in ("pi", "pi-durable"):
+        package = json.loads((assets / name / "package.json").read_text(encoding="utf-8"))
+        assert package["version"] == version, name
+    client = re.search(
+        r'version: "([^"]+)"', (assets / "pi" / "index.ts").read_text(encoding="utf-8")
+    )
+    assert client is not None and client.group(1) == version

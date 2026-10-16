@@ -85,6 +85,11 @@ def test_example_maps_guard_the_twin_and_spare_harmless_calls(host: str) -> None
         "twin.human-only",
     )
     assert rules.match(shell, cmd("twinmeup lesson confirm lsn-1"))[1] == "twin.human-only"  # type: ignore[index]
+    approve = cmd("twinmeup approvals approve ap-1")
+    assert rules.match(shell, approve)[1] == "twin.human-only"  # type: ignore[index]
+    alias = cmd("twin-me-up grant add --workflow general --action x.y")
+    assert rules.match(shell, alias)[1] == "twin.human-only"  # type: ignore[index]
+    assert rules.match(shell, cmd("twinmeup approvals list")) is None
     harmless = 'twinmeup --actor agent:x tools call twin_brief \'{"objective": "export it"}\''
     assert rules.match(shell, cmd(harmless)) is None
     assert rules.match(write, {"path": "/home/u/.twinmeup/action-map.json"})[1] == "twin.store"  # type: ignore[index]

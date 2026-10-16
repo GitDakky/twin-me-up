@@ -6,6 +6,21 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `twinmeup connect pi-durable`: a guide for the Pi Durable extension, also in
+  docs/integrations.md.
+
+### Fixed
+
+- The example action maps now treat `twinmeup approvals approve` and `decline` as human-only,
+  and guard every human-only command typed as `twin-me-up`, which runs commands since 0.2.1.
+
+### Documentation
+
+- The README, install prompt, security policy, contributing guide and pilot guide describe
+  approvals, single-use grants, safe retries, upgrading and the two command names.
+
 ## [0.2.1] - 2026-10-15
 
 ### Fixed
